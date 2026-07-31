@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Actols Quotes · Cotizador</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- Estilos principales -->
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <h1>Actols</h1>
+        <span class="badge">Quotes</span>
+      </div>
+      <div class="currency-selector">
+        <label for="currency-select" class="visually-hidden">Moneda</label>
+        <select id="currency-select">
+          <option value="COP">COP ($)</option>
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (€)</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- Grid principal -->
+    <div class="content-grid">
+      <!-- Columna izquierda: lista de módulos -->
+      <main id="modules-container">
+        <!-- Renderizado dinámico -->
+      </main>
+
+      <!-- Columna derecha: resumen (sticky) -->
+      <aside class="sidebar" id="summary-panel">
+        <div class="summary-card">
+          <h2 class="summary-title">Total Estimado</h2>
+          <div class="total-amount" id="total-display">$ 0</div>
+          <button class="btn btn-primary btn-block" id="quote-action-btn">Hacer Cotización</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Sección Administración -->
+    <section class="admin-section" id="admin-panel">
+      <h2 class="admin-title">Administración de Módulos</h2>
+      <div class="admin-form">
+        <input type="text" id="module-desc" placeholder="Descripción del módulo" />
+        <input type="number" id="module-price" placeholder="Precio (COP)" />
+        <button class="btn btn-secondary" id="add-module-btn">Agregar Módulo</button>
+      </div>
+      <div class="admin-list" id="admin-list-container">
+        <!-- Listado dinámico de módulos con opción eliminar -->
+      </div>
+    </section>
+  </div>
+
+  <!-- Diálogo nativo para capturar nombre del cliente -->
+  <dialog id="client-dialog">
+    <form method="dialog">
+      <h3>Nombre del Cliente</h3>
+      <p>Ingrese el nombre del cliente para la cotización:</p>
+      <input type="text" id="client-name-input" placeholder="Ej: Juan Pérez" required />
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" id="dialog-cancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="dialog-confirm">Generar PDF</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
