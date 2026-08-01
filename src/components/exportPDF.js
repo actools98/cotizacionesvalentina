@@ -9,11 +9,12 @@ import { formatCurrency } from '../utils/formatters.js';
 /**
  * Genera y descarga el PDF de la cotización.
  * @param {string} clientName - Nombre del cliente.
+ * @param {string} productName - Producto a cotizar.
  * @param {string[]} checkedIds - IDs de los módulos seleccionados.
  * @param {string} currency - Moneda activa ('COP', 'USD', 'EUR').
  * @param {number} totalCOP - Total en COP (base).
  */
-export async function generateQuotePDF(clientName, checkedIds, currency, totalCOP) {
+export async function generateQuotePDF(clientName, productName, checkedIds, currency, totalCOP) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -22,12 +23,13 @@ export async function generateQuotePDF(clientName, checkedIds, currency, totalCO
   doc.setFont('helvetica', 'bold');
   doc.text('Cotización - Actols', pageWidth / 2, 20, { align: 'center' });
 
-  // Datos del cliente y fecha
+  // Datos del cliente, producto y fecha
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text(`Cliente: ${clientName}`, 14, 35);
+  doc.text(`Producto: ${productName}`, 14, 42);
   const today = new Date().toLocaleDateString('es-CO');
-  doc.text(`Fecha: ${today}`, 14, 42);
+  doc.text(`Fecha: ${today}`, 14, 49);
 
   // Módulos seleccionados
   const selected = getSelectedModules(checkedIds);
@@ -43,13 +45,13 @@ export async function generateQuotePDF(clientName, checkedIds, currency, totalCO
 
   // Tabla
   doc.autoTable({
-    startY: 50,
+    startY: 56,
     head: [['Descripción', 'Precio']],
     body: tableRows,
     foot: [['Total', totalFormatted]],
     theme: 'striped',
     styles: { fontSize: 10 },
-    headStyles: { fillColor: [79, 70, 229] }, // --color-primary
+    headStyles: { fillColor: [79, 70, 229] },
     footStyles: { fillColor: [240, 240, 240], textColor: [15, 23, 42], fontStyle: 'bold' },
     margin: { left: 14, right: 14 },
   });
