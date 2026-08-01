@@ -1,9 +1,8 @@
-# .github/workflows/deploy.yml
 name: Deploy a GitHub Pages
 
 on:
   push:
-    branches: [ "main" ]   # o "master" si usas master
+    branches: [ "main" ]   # Cambia a "master" si usas master
   workflow_dispatch:
 
 permissions:
@@ -25,11 +24,11 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22        # <--- Cambiado a 22 para evitar deprecated
           cache: 'npm'
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install          # <--- CAMBIADO: antes era npm ci
 
       - name: Construir proyecto
         run: npm run build
