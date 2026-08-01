@@ -1,7 +1,7 @@
 // domHelpers.js - Funciones para creación y manipulación del DOM
 
 /**
- * Crea una tarjeta de módulo (checkbox + label + precio).
+ * Crea una tarjeta de módulo (modo cotización: checkbox + label + precio)
  */
 export function createModuleCard(module, currency, convertFn, formatFn) {
   const { id, description, price } = module;
@@ -34,7 +34,7 @@ export function createModuleCard(module, currency, convertFn, formatFn) {
 }
 
 /**
- * Renderiza la lista de módulos en un contenedor.
+ * Renderiza la lista de módulos en modo cotización
  */
 export function renderModules(container, modules, currency, convertFn, formatFn) {
   container.innerHTML = '';
@@ -45,50 +45,59 @@ export function renderModules(container, modules, currency, convertFn, formatFn)
 }
 
 /**
- * Crea un elemento de administración (fila con botón eliminar).
+ * Crea una tarjeta de módulo en modo administración (edición)
+ * Incluye botones Editar y Eliminar
  */
-export function createAdminItem(module, onDelete) {
+export function createAdminModuleCard(module, onDelete, onEdit) {
   const { id, description, price } = module;
 
-  const item = document.createElement('div');
-  item.className = 'admin-item';
+  const card = document.createElement('div');
+  card.className = 'module-card admin-mode';
 
-  const info = document.createElement('div');
-  info.className = 'admin-item-info';
-
-  const descSpan = document.createElement('span');
-  descSpan.className = 'admin-desc';
-  descSpan.textContent = description;
+  const info = document.createElement('span');
+  info.className = 'module-label';
+  info.textContent = description;
 
   const priceSpan = document.createElement('span');
-  priceSpan.className = 'admin-price';
+  priceSpan.className = 'module-price';
   priceSpan.textContent = `$ ${Number(price).toLocaleString('es-CO')}`;
 
-  info.appendChild(descSpan);
-  info.appendChild(priceSpan);
-
   const actions = document.createElement('div');
-  actions.className = 'admin-item-actions';
+  actions.className = 'admin-actions';
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-edit';
+  editBtn.textContent = 'Editar';
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onEdit(id);
+  });
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'btn btn-danger';
+  deleteBtn.className = 'btn btn-delete';
   deleteBtn.textContent = 'Eliminar';
-  deleteBtn.addEventListener('click', () => onDelete(id));
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onDelete(id);
+  });
 
+  actions.appendChild(editBtn);
   actions.appendChild(deleteBtn);
-  item.appendChild(info);
-  item.appendChild(actions);
 
-  return item;
+  card.appendChild(info);
+  card.appendChild(priceSpan);
+  card.appendChild(actions);
+
+  return card;
 }
 
 /**
- * Renderiza la lista de administración.
+ * Renderiza la lista de módulos en modo administración
  */
-export function renderAdminList(container, modules, onDelete) {
+export function renderAdminModules(container, modules, onDelete, onEdit) {
   container.innerHTML = '';
   modules.forEach(mod => {
-    const item = createAdminItem(mod, onDelete);
-    container.appendChild(item);
+    const card = createAdminModuleCard(mod, onDelete, onEdit);
+    container.appendChild(card);
   });
 }
