@@ -24,11 +24,12 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22        # <--- Cambiado a 22 para evitar deprecated
-          cache: 'npm'
+          node-version: 22
+          # (Opcional) Si quieres evitar la advertencia de Node 20,
+          # puedes forzar a que las actions usen Node 22, pero no es necesario.
 
       - name: Instalar dependencias
-        run: npm install          # <--- CAMBIADO: antes era npm ci
+        run: npm install   # Esto creará package-lock.json si no existe
 
       - name: Construir proyecto
         run: npm run build
