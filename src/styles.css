@@ -1,18 +1,18 @@
 /* ============================================================
-   Design Tokens (variables)
+   Design Tokens (Tema Oscuro)
    ============================================================ */
 :root {
-  --color-bg-main: #F8FAFC;
-  --color-bg-surface: #FFFFFF;
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #64748B;
-  --color-border: #E2E8F0;
+  --color-bg-main: #0F172A;        /* Slate 900 */
+  --color-bg-surface: #1E293B;     /* Slate 800 */
+  --color-text-primary: #F1F5F9;   /* Slate 100 */
+  --color-text-secondary: #94A3B8; /* Slate 400 */
+  --color-border: #334155;         /* Slate 700 */
 
-  --color-primary: #4F46E5;
-  --color-primary-hover: #4338CA;
-  --color-primary-muted: #EEF2FF;
-  --color-success: #10B981;
-  --color-danger: #EF4444;
+  --color-primary: #818CF8;        /* Indigo 400 (más brillante sobre fondo oscuro) */
+  --color-primary-hover: #6366F1;  /* Indigo 500 */
+  --color-primary-muted: #1E1B4B;  /* Indigo 950 (fondo tenue) */
+  --color-success: #34D399;        /* Emerald 400 */
+  --color-danger: #F87171;         /* Red 400 */
 
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -30,8 +30,8 @@
 
   --radius-sm: 6px;
   --radius-md: 12px;
-  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-  --shadow-floating: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
+  --shadow-floating: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.2);
 }
 
 /* ============================================================
@@ -95,6 +95,14 @@ header {
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-sm);
   border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }
 
 .logo {
@@ -119,6 +127,44 @@ header {
   border-radius: 20px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Botón de alternancia modo edición */
+.btn-toggle {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: var(--text-small);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.btn-toggle:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.btn-toggle.active {
+  background-color: var(--color-success);
+}
+
+.btn-toggle.active:hover {
+  filter: brightness(0.9);
+}
+
 .currency-selector {
   display: flex;
   align-items: center;
@@ -136,6 +182,7 @@ header {
   cursor: pointer;
   outline: none;
   transition: border 0.2s ease;
+  min-height: 44px;
 }
 
 #currency-select:hover {
@@ -230,6 +277,110 @@ header {
 }
 
 /* ============================================================
+   Tarjetas en modo edición (administración)
+   ============================================================ */
+.module-card.admin-mode {
+  cursor: default;
+  background: var(--color-bg-surface);
+  border-color: var(--color-border);
+}
+
+.module-card.admin-mode:hover {
+  border-color: var(--color-border);
+}
+
+.module-card .admin-actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-left: var(--space-sm);
+}
+
+.module-card .admin-actions .btn {
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  font-size: var(--text-small);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.module-card .admin-actions .btn-edit {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+}
+
+.module-card .admin-actions .btn-edit:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.module-card .admin-actions .btn-delete {
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+}
+
+.module-card .admin-actions .btn-delete:hover {
+  filter: brightness(0.85);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   Formulario de agregar (modo edición)
+   ============================================================ */
+#add-module-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+#add-module-form input {
+  flex: 1 1 140px;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
+  transition: border 0.2s ease;
+}
+
+#add-module-form input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+#add-module-form input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+#add-module-form .btn {
+  flex: 0 0 auto;
+  height: 44px;
+  background-color: var(--color-success);
+  color: #FFFFFF;
+  border: none;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#add-module-form .btn:hover {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
    Sidebar (resumen)
    ============================================================ */
 .sidebar {
@@ -273,7 +424,7 @@ header {
 }
 
 /* ============================================================
-   Botones
+   Botones generales
    ============================================================ */
 .btn {
   display: inline-flex;
@@ -342,97 +493,7 @@ header {
 }
 
 /* ============================================================
-   Sección Administración
-   ============================================================ */
-.admin-section {
-  border-top: 1px solid var(--color-border);
-  margin-top: var(--space-xl);
-  padding-top: var(--space-lg);
-}
-
-.admin-title {
-  font-size: var(--text-h2);
-  font-weight: 600;
-  margin-bottom: var(--space-md);
-}
-
-.admin-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-md);
-}
-
-.admin-form input {
-  flex: 1 1 180px;
-  height: 44px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-sm);
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  background-color: var(--color-bg-surface);
-  transition: border 0.2s ease;
-}
-
-.admin-form input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-}
-
-.admin-form input:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.admin-form .btn {
-  flex: 0 0 auto;
-}
-
-.admin-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.admin-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-
-.admin-item .admin-item-info {
-  display: flex;
-  gap: var(--space-md);
-  font-size: var(--text-body);
-}
-
-.admin-item .admin-item-info .admin-desc {
-  font-weight: 500;
-}
-
-.admin-item .admin-item-info .admin-price {
-  font-family: var(--font-mono);
-  color: var(--color-text-secondary);
-}
-
-.admin-item .admin-item-actions {
-  display: flex;
-  gap: var(--space-xs);
-}
-
-.admin-item .admin-item-actions .btn {
-  min-height: 32px;
-  padding: 0 var(--space-sm);
-  font-size: var(--text-small);
-}
-
-/* ============================================================
-   Diálogo (nombre del cliente)
+   Diálogo centrado (nombre del cliente y producto)
    ============================================================ */
 #client-dialog {
   border: none;
@@ -440,25 +501,45 @@ header {
   padding: var(--space-lg);
   max-width: 420px;
   width: 90%;
-  box-shadow: var(--shadow-floating);
   background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-floating);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
 }
 
 #client-dialog::backdrop {
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
 }
 
 #client-dialog h3 {
   font-size: var(--text-h2);
   margin-bottom: var(--space-sm);
+  color: var(--color-text-primary);
 }
 
 #client-dialog p {
   color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+#client-dialog .form-group {
   margin-bottom: var(--space-md);
 }
 
-#client-dialog input {
+#client-dialog .form-group label {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: 500;
+  margin-bottom: var(--space-xs);
+  color: var(--color-text-secondary);
+}
+
+#client-dialog .form-group input {
   width: 100%;
   height: 44px;
   border: 1px solid var(--color-border);
@@ -466,15 +547,17 @@ header {
   padding: 0 var(--space-sm);
   font-family: var(--font-sans);
   font-size: var(--text-body);
-  margin-bottom: var(--space-md);
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
+  transition: border 0.2s ease;
 }
 
-#client-dialog input:focus {
+#client-dialog .form-group input:focus {
   border-color: var(--color-primary);
   outline: none;
 }
 
-#client-dialog input:focus-visible {
+#client-dialog .form-group input:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -483,6 +566,11 @@ header {
   display: flex;
   gap: var(--space-sm);
   justify-content: flex-end;
+  margin-top: var(--space-md);
+}
+
+.dialog-actions .btn {
+  min-width: 100px;
 }
 
 /* ============================================================
@@ -497,7 +585,7 @@ header {
     z-index: 10;
     background: var(--color-bg-surface);
     border-radius: 0;
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
     padding: var(--space-sm);
     margin: 0;
     width: 100%;
@@ -515,20 +603,25 @@ header {
   }
 
   .content-grid {
-    margin-bottom: 120px; /* espacio para la barra fija */
+    margin-bottom: 120px;
   }
 
-  .admin-section {
-    margin-bottom: 80px;
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+
+  .header-left, .header-right {
+    justify-content: space-between;
+  }
+
+  #add-module-form {
+    flex-direction: column;
+  }
+
+  #add-module-form input {
+    flex: 1 1 auto;
+    width: 100%;
   }
 }
-
-/* ============================================================
-   Utilidades extra
-   ============================================================ */
-.text-muted {
-  color: var(--color-text-secondary);
-}
-
-.mt-1 { margin-top: var(--space-sm); }
-.mb-1 { margin-bottom: var(--space-sm); }
