@@ -20,7 +20,7 @@ export async function getModules() {
 }
 
 async function initializeDefaultModules() {
-  const response = await fetch('/data/default-modules.json');
+  const response = await fetch('data/default-modules.json');
   if (!response.ok) {
     throw new Error('No se pudo cargar el archivo de datos por defecto.');
   }
