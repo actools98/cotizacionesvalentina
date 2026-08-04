@@ -1,7 +1,7 @@
 // domHelpers.js - Funciones para creación y manipulación del DOM
 
 /**
- * Crea una tarjeta de módulo (modo cotización: checkbox + label + precio)
+ * Crea una tarjeta de módulo en modo cotización (checkbox + label + precio)
  */
 export function createModuleCard(module, currency, convertFn, formatFn) {
   const { id, description, price } = module;
@@ -10,6 +10,8 @@ export function createModuleCard(module, currency, convertFn, formatFn) {
 
   const card = document.createElement('div');
   card.className = 'module-card';
+  card.dataset.id = id;
+  card.dataset.categoryId = module.category_id || '';
 
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
@@ -34,14 +36,60 @@ export function createModuleCard(module, currency, convertFn, formatFn) {
 }
 
 /**
- * Renderiza la lista de módulos en modo cotización
+ * Renderiza la lista de módulos agrupados por categoría (modo cotización)
  */
-export function renderModules(container, modules, currency, convertFn, formatFn) {
+export function renderModulesByCategory(container, modules, categories, currency, convertFn, formatFn) {
   container.innerHTML = '';
-  modules.forEach(mod => {
-    const card = createModuleCard(mod, currency, convertFn, formatFn);
-    container.appendChild(card);
+
+  if (!categories || categories.length === 0) {
+    const msg = document.createElement('p');
+    msg.textContent = 'No hay categorías. Agrega una desde el modo Editar.';
+    container.appendChild(msg);
+    return;
+  }
+
+  // Agrupar módulos por categoría
+  const grouped = {};
+  categories.forEach(cat => {
+    grouped[cat.id] = {
+      category: cat,
+      modules: modules.filter(m => m.category_id === cat.id) || []
+    };
   });
+
+  // Renderizar cada categoría
+  for (const catId in grouped) {
+    const { category, modules: mods } = grouped[catId];
+    const section = document.createElement('div');
+    section.className = 'category-section';
+    section.dataset.categoryId = category.id;
+
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    const title = document.createElement('h3');
+    title.textContent = category.name;
+    header.appendChild(title);
+    section.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'module-list';
+    list.dataset.categoryId = category.id;
+
+    if (mods.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-message';
+      empty.textContent = 'No hay módulos en esta categoría.';
+      list.appendChild(empty);
+    } else {
+      mods.forEach(mod => {
+        const card = createModuleCard(mod, currency, convertFn, formatFn);
+        list.appendChild(card);
+      });
+    }
+
+    section.appendChild(list);
+    container.appendChild(section);
+  }
 }
 
 /**
@@ -53,6 +101,8 @@ export function createAdminModuleCard(module, onDelete, onEdit) {
 
   const card = document.createElement('div');
   card.className = 'module-card admin-mode';
+  card.dataset.id = id;
+  card.dataset.categoryId = module.category_id || '';
 
   const info = document.createElement('span');
   info.className = 'module-label';
@@ -92,12 +142,58 @@ export function createAdminModuleCard(module, onDelete, onEdit) {
 }
 
 /**
- * Renderiza la lista de módulos en modo administración
+ * Renderiza la lista de módulos agrupados por categoría en modo administración
  */
-export function renderAdminModules(container, modules, onDelete, onEdit) {
+export function renderAdminModulesByCategory(container, modules, categories, onDelete, onEdit) {
   container.innerHTML = '';
-  modules.forEach(mod => {
-    const card = createAdminModuleCard(mod, onDelete, onEdit);
-    container.appendChild(card);
+
+  if (!categories || categories.length === 0) {
+    const msg = document.createElement('p');
+    msg.textContent = 'No hay categorías. Agrega una.';
+    container.appendChild(msg);
+    return;
+  }
+
+  // Agrupar módulos por categoría
+  const grouped = {};
+  categories.forEach(cat => {
+    grouped[cat.id] = {
+      category: cat,
+      modules: modules.filter(m => m.category_id === cat.id) || []
+    };
   });
+
+  for (const catId in grouped) {
+    const { category, modules: mods } = grouped[catId];
+    const section = document.createElement('div');
+    section.className = 'category-section';
+    section.dataset.categoryId = category.id;
+
+    const header = document.createElement('div');
+    header.className = 'category-header';
+    const title = document.createElement('h3');
+    title.textContent = category.name;
+    header.appendChild(title);
+    // botones para editar/eliminar categoría (se añadirán después en main)
+    section.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'module-list';
+    list.dataset.categoryId = category.id;
+
+    if (mods.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-message';
+      empty.textContent = 'No hay módulos en esta categoría.';
+      list.appendChild(empty);
+    } else {
+      mods.forEach(mod => {
+        const card = createAdminModuleCard(mod, onDelete, onEdit);
+        list.appendChild(card);
+      });
+    }
+
+    section.appendChild(list);
+    container.appendChild(section);
+  }
 }
