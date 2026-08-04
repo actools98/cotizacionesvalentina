@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Actols Quotes · Cotizador</title>
-  <!-- Google Fonts -->
+  <title>actols · Cotizador</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
-  <!-- Estilos principales -->
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
@@ -17,7 +15,7 @@
     <header>
       <div class="header-left">
         <div class="logo">
-          <h1>Actols</h1>
+          <h1>actols</h1>
           <span class="badge">Quotes</span>
         </div>
         <button class="btn-toggle" id="toggle-mode-btn">Editar</button>
@@ -36,12 +34,10 @@
 
     <!-- Grid principal -->
     <div class="content-grid">
-      <!-- Columna izquierda: lista de módulos -->
       <main id="modules-container">
         <!-- Renderizado dinámico -->
       </main>
 
-      <!-- Columna derecha: resumen (sticky) -->
       <aside class="sidebar" id="summary-panel">
         <div class="summary-card">
           <h2 class="summary-title">Total Estimado</h2>
@@ -51,18 +47,25 @@
       </aside>
     </div>
 
-    <!-- Contenedor oculto para el formulario de agregar (se muestra en modo edición) -->
+    <!-- Contenedor para agregar módulo (modo edición) -->
     <div id="add-module-container" style="display: none; margin-top: var(--space-md);">
       <form id="add-module-form">
-        <input type="text" id="module-desc" placeholder="Descripción del módulo" required />
+        <input type="text" id="module-desc" placeholder="Descripción" required />
         <input type="number" id="module-price" placeholder="Precio (COP)" required />
-        <button type="submit" class="btn">Agregar Módulo</button>
+        <select id="module-category-select">
+          <!-- Se llenará con JS -->
+        </select>
+        <button type="submit" class="btn">Agregar</button>
       </form>
     </div>
 
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>powered by actols</p>
+    </footer>
   </div>
 
-  <!-- Diálogo nativo para capturar nombre del cliente y producto -->
+  <!-- Diálogo cotización -->
   <dialog id="client-dialog">
     <form method="dialog">
       <h3>Datos de la Cotización</h3>
@@ -71,7 +74,7 @@
         <input type="text" id="client-name-input" placeholder="Ej: Juan Pérez" required />
       </div>
       <div class="form-group">
-        <label for="product-name-input">Producto a cotizar</label>
+        <label for="product-name-input">Producto o servicio</label>
         <input type="text" id="product-name-input" placeholder="Ej: Desarrollo de software" required />
       </div>
       <div class="dialog-actions">
