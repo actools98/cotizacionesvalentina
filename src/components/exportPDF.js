@@ -10,12 +10,12 @@ export async function generateQuotePDF(clientName, productName, checkedIds, curr
 
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('Cotización - Actols', pageWidth / 2, 20, { align: 'center' });
+  doc.text('Cotización - actols', pageWidth / 2, 20, { align: 'center' });
 
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text(`Cliente: ${clientName}`, 14, 35);
-  doc.text(`Producto: ${productName}`, 14, 42);
+  doc.text(`Producto o servicio: ${productName}`, 14, 42);
   const today = new Date().toLocaleDateString('es-CO');
   doc.text(`Fecha: ${today}`, 14, 49);
 
@@ -45,7 +45,7 @@ export async function generateQuotePDF(clientName, productName, checkedIds, curr
   doc.setFontSize(10);
   doc.setTextColor(100);
   doc.text('Esta cotización es válida por 30 días.', 14, finalY);
-  doc.text('Actols · Soluciones empresariales', 14, finalY + 7);
+  doc.text('powered by actols', 14, finalY + 7);
 
   const fileName = `Cotizacion_${clientName.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
