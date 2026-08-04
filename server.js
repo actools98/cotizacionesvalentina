@@ -37,7 +37,7 @@ async function initDb() {
     )
   `);
 
-  // Tabla módulos con categoría y orden
+  // Tabla módulos
   await db.exec(`
     CREATE TABLE IF NOT EXISTS modules (
       id TEXT PRIMARY KEY,
@@ -48,7 +48,17 @@ async function initDb() {
     )
   `);
 
-  // Cargar categorías por defecto si no hay
+  // Tabla portafolios
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS portfolios (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      link TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+
+  // Cargar categorías por defecto
   const catCount = await db.get('SELECT COUNT(*) as count FROM categories');
   if (catCount.count === 0) {
     const defaultCats = [
@@ -64,7 +74,7 @@ async function initDb() {
     console.log('📂 Categorías por defecto creadas');
   }
 
-  // Cargar módulos por defecto si no hay
+  // Cargar módulos por defecto
   const modCount = await db.get('SELECT COUNT(*) as count FROM modules');
   if (modCount.count === 0) {
     const defaultPath = path.join(__dirname, 'public', 'data', 'default-modules.json');
@@ -80,7 +90,6 @@ async function initDb() {
         { id: 'mod-5', description: 'Soporte técnico mensual', price: 280000 }
       ];
     }
-    // Asignar categoría por defecto (la primera)
     const firstCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
     if (firstCat) {
       for (let i = 0; i < defaults.length; i++) {
@@ -97,7 +106,7 @@ async function initDb() {
   console.log('✅ Base de datos lista');
 }
 
-// ---- Rutas API para categorías ----
+// ---- Rutas para categorías ----
 app.get('/api/categories', async (req, res) => {
   try {
     const categories = await db.all('SELECT * FROM categories ORDER BY sort_order');
@@ -139,7 +148,7 @@ app.put('/api/categories/:id', async (req, res) => {
 app.delete('/api/categories/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    // Mover módulos a una categoría por defecto (la primera)
+    // Mover módulos a la primera categoría
     const defaultCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
     if (defaultCat) {
       await db.run('UPDATE modules SET category_id = ? WHERE category_id = ?', [defaultCat.id, id]);
@@ -151,7 +160,22 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 });
 
-// ---- Rutas API para módulos ----
+app.patch('/api/categories/reorder', async (req, res) => {
+  const { items } = req.body;
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ error: 'Se requiere un arreglo de items' });
+  }
+  try {
+    for (const item of items) {
+      await db.run('UPDATE categories SET sort_order = ? WHERE id = ?', [item.sort_order, item.id]);
+    }
+    res.status(200).json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al reordenar categorías' });
+  }
+});
+
+// ---- Rutas para módulos ----
 app.get('/api/modules', async (req, res) => {
   try {
     const modules = await db.all(`
@@ -173,13 +197,11 @@ app.post('/api/modules', async (req, res) => {
   }
   try {
     const id = `mod-${Date.now()}`;
-    // Determinar categoría (si no se envía, usar la primera)
     let catId = category_id;
     if (!catId) {
       const firstCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
       catId = firstCat?.id || null;
     }
-    // Obtener el último sort_order para esa categoría
     const maxOrder = await db.get('SELECT MAX(sort_order) as max FROM modules WHERE category_id = ?', [catId]);
     const order = (maxOrder?.max ?? -1) + 1;
 
@@ -201,14 +223,7 @@ app.put('/api/modules/:id', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos' });
   }
   try {
-    const updates = [];
-    const params = [];
-    if (description) { updates.push('description = ?'); params.push(description); }
-    if (price !== undefined) { updates.push('price = ?'); params.push(price); }
-    if (category_id) { updates.push('category_id = ?'); params.push(category_id); }
-    if (updates.length === 0) return res.status(400).json({ error: 'Nada que actualizar' });
-    params.push(id);
-    await db.run(`UPDATE modules SET ${updates.join(', ')} WHERE id = ?`, params);
+    await db.run('UPDATE modules SET description = ?, price = ?, category_id = ? WHERE id = ?', [description, price, category_id, id]);
     const updated = await db.get('SELECT * FROM modules WHERE id = ?', [id]);
     res.json(updated);
   } catch (e) {
@@ -226,18 +241,14 @@ app.delete('/api/modules/:id', async (req, res) => {
   }
 });
 
-// Reordenar módulos
 app.patch('/api/modules/reorder', async (req, res) => {
-  const { items } = req.body; // [{id, category_id, sort_order}, ...]
+  const { items } = req.body;
   if (!items || !Array.isArray(items)) {
     return res.status(400).json({ error: 'Se requiere un arreglo de items' });
   }
   try {
     for (const item of items) {
-      await db.run(
-        'UPDATE modules SET category_id = ?, sort_order = ? WHERE id = ?',
-        [item.category_id, item.sort_order, item.id]
-      );
+      await db.run('UPDATE modules SET category_id = ?, sort_order = ? WHERE id = ?', [item.category_id, item.sort_order, item.id]);
     }
     res.status(200).json({ success: true });
   } catch (e) {
@@ -245,19 +256,51 @@ app.patch('/api/modules/reorder', async (req, res) => {
   }
 });
 
-// Reordenar categorías
-app.patch('/api/categories/reorder', async (req, res) => {
-  const { items } = req.body; // [{id, sort_order}, ...]
-  if (!items || !Array.isArray(items)) {
-    return res.status(400).json({ error: 'Se requiere un arreglo de items' });
-  }
+// ---- Rutas para portafolios ----
+app.get('/api/portfolios', async (req, res) => {
   try {
-    for (const item of items) {
-      await db.run('UPDATE categories SET sort_order = ? WHERE id = ?', [item.sort_order, item.id]);
-    }
-    res.status(200).json({ success: true });
+    const portfolios = await db.all('SELECT * FROM portfolios ORDER BY sort_order');
+    res.json(portfolios);
   } catch (e) {
-    res.status(500).json({ error: 'Error al reordenar categorías' });
+    res.status(500).json({ error: 'Error al obtener portafolios' });
+  }
+});
+
+app.post('/api/portfolios', async (req, res) => {
+  const { name, link } = req.body;
+  if (!name || !link) return res.status(400).json({ error: 'Nombre y enlace requeridos' });
+  try {
+    const id = `pf-${Date.now()}`;
+    const maxOrder = await db.get('SELECT MAX(sort_order) as max FROM portfolios');
+    const order = (maxOrder?.max ?? -1) + 1;
+    await db.run('INSERT INTO portfolios (id, name, link, sort_order) VALUES (?, ?, ?, ?)', [id, name, link, order]);
+    const newPf = await db.get('SELECT * FROM portfolios WHERE id = ?', [id]);
+    res.status(201).json(newPf);
+  } catch (e) {
+    res.status(500).json({ error: 'Error al crear portafolio' });
+  }
+});
+
+app.put('/api/portfolios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, link } = req.body;
+  if (!name || !link) return res.status(400).json({ error: 'Nombre y enlace requeridos' });
+  try {
+    await db.run('UPDATE portfolios SET name = ?, link = ? WHERE id = ?', [name, link, id]);
+    const updated = await db.get('SELECT * FROM portfolios WHERE id = ?', [id]);
+    res.json(updated);
+  } catch (e) {
+    res.status(500).json({ error: 'Error al actualizar portafolio' });
+  }
+});
+
+app.delete('/api/portfolios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await db.run('DELETE FROM portfolios WHERE id = ?', [id]);
+    res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: 'Error al eliminar portafolio' });
   }
 });
 
