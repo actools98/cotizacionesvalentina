@@ -1,40 +1,89 @@
-// state.js - Comunicación con la API
+// state.js - Comunicación con la API (incluye categorías)
 
-const API_URL = '/api/modules';
+const API_URL = '/api';
 
+// ---- Módulos ----
 export async function getModules() {
-  try {
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error('Error al obtener módulos');
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching modules:', error);
-    return [];
-  }
+  const res = await fetch(`${API_URL}/modules`);
+  if (!res.ok) throw new Error('Error al obtener módulos');
+  return res.json();
 }
 
-export async function addModule(description, price) {
-  const res = await fetch(API_URL, {
+export async function addModule(description, price, category_id = null) {
+  const res = await fetch(`${API_URL}/modules`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description, price: Number(price) })
+    body: JSON.stringify({ description, price: Number(price), category_id })
   });
   if (!res.ok) throw new Error('Error al agregar módulo');
-  return await res.json();
+  return res.json();
 }
 
 export async function deleteModule(id) {
-  const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_URL}/modules/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Error al eliminar módulo');
   return true;
 }
 
-export async function editModule(id, description, price) {
-  const res = await fetch(`${API_URL}/${id}`, {
+export async function editModule(id, description, price, category_id = null) {
+  const res = await fetch(`${API_URL}/modules/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description, price: Number(price) })
+    body: JSON.stringify({ description, price: Number(price), category_id })
   });
   if (!res.ok) throw new Error('Error al editar módulo');
-  return await res.json();
+  return res.json();
+}
+
+export async function reorderModules(items) {
+  const res = await fetch(`${API_URL}/modules/reorder`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items })
+  });
+  if (!res.ok) throw new Error('Error al reordenar módulos');
+  return res.json();
+}
+
+// ---- Categorías ----
+export async function getCategories() {
+  const res = await fetch(`${API_URL}/categories`);
+  if (!res.ok) throw new Error('Error al obtener categorías');
+  return res.json();
+}
+
+export async function addCategory(name) {
+  const res = await fetch(`${API_URL}/categories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  if (!res.ok) throw new Error('Error al agregar categoría');
+  return res.json();
+}
+
+export async function editCategory(id, name) {
+  const res = await fetch(`${API_URL}/categories/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  if (!res.ok) throw new Error('Error al editar categoría');
+  return res.json();
+}
+
+export async function deleteCategory(id) {
+  const res = await fetch(`${API_URL}/categories/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Error al eliminar categoría');
+  return true;
+}
+
+export async function reorderCategories(items) {
+  const res = await fetch(`${API_URL}/categories/reorder`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items })
+  });
+  if (!res.ok) throw new Error('Error al reordenar categorías');
+  return res.json();
 }
