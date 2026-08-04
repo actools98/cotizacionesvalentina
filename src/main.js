@@ -1,10 +1,10 @@
-// main.js - Punto de entrada de la aplicación
+// main.js - Punto de entrada de la aplicación (con API + BD)
 
-import { getModules, saveModules, deleteModule, addModule, editModule } from './state.js';
+import { getModules, addModule, deleteModule, editModule } from './state.js';
 import { calculateTotal, getSelectedModules } from './components/quoteCalculator.js';
 import { fetchExchangeRates, convertCurrency } from './components/currencyConverter.js';
 import { generateQuotePDF } from './components/exportPDF.js';
-import { renderModules, renderAdminModules, renderAddForm } from './utils/domHelpers.js';
+import { renderModules, renderAdminModules } from './utils/domHelpers.js';
 import { formatCurrency } from './utils/formatters.js';
 
 // ---- DOM references ----
@@ -30,37 +30,38 @@ let currentModules = [];
 let currentCurrency = 'COP';
 let exchangeRates = null;
 let currentCheckedIds = new Set();
-let isEditMode = false; // false = modo cotización, true = modo edición
+let isEditMode = false;
 
 // ---- Inicialización ----
 async function init() {
-  currentModules = await getModules();
-  exchangeRates = await fetchExchangeRates();
-  currencySelect.value = currentCurrency;
+  try {
+    // 1. Cargar módulos desde la API (BD)
+    currentModules = await getModules();
+    
+    // 2. Obtener tasas de cambio
+    exchangeRates = await fetchExchangeRates();
+    
+    // 3. Configurar selector de moneda
+    currencySelect.value = currentCurrency;
 
-  // Configurar modo inicial (cotización)
-  setEditMode(false);
+    // 4. Configurar modo inicial (cotización)
+    setEditMode(false);
 
-  // Escuchar cambios en checkboxes (delegación)
-  modulesContainer.addEventListener('change', onModuleCheckChange);
+    // 5. Escuchar eventos
+    modulesContainer.addEventListener('change', onModuleCheckChange);
+    currencySelect.addEventListener('change', onCurrencyChange);
+    toggleModeBtn.addEventListener('click', onToggleMode);
+    addModuleForm.addEventListener('submit', onAddModule);
+    quoteActionBtn.addEventListener('click', onQuoteAction);
 
-  // Escuchar cambio de moneda
-  currencySelect.addEventListener('change', onCurrencyChange);
+    // Diálogo
+    dialogConfirm.addEventListener('click', onDialogConfirm);
+    dialogCancel.addEventListener('click', () => clientDialog.close());
 
-  // Escuchar toggle de modo
-  toggleModeBtn.addEventListener('click', onToggleMode);
-
-  // Escuchar submit del formulario de agregar
-  addModuleForm.addEventListener('submit', onAddModule);
-
-  // Escuchar botón de cotización
-  quoteActionBtn.addEventListener('click', onQuoteAction);
-
-  // Diálogo
-  dialogConfirm.addEventListener('click', onDialogConfirm);
-  dialogCancel.addEventListener('click', () => clientDialog.close());
-
-  // Cerrar diálogo con Escape (comportamiento nativo)
+  } catch (error) {
+    console.error('Error en la inicialización:', error);
+    alert('No se pudo cargar la aplicación. Revise la consola.');
+  }
 }
 
 // ---- Funciones de renderizado ----
@@ -76,17 +77,15 @@ function renderAll() {
 }
 
 function updateTotal() {
-  // Obtener IDs chequeados desde el DOM (solo en modo cotización)
+  // Solo actualizamos el total si estamos en modo cotización
   if (!isEditMode) {
     const checkboxes = modulesContainer.querySelectorAll('input[type="checkbox"]:checked');
     const checkedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
     currentCheckedIds = new Set(checkedIds);
-  } else {
-    // En modo edición, mantenemos el total de los seleccionados previamente
-    // (podríamos resetearlo, pero mejor lo dejamos)
   }
-
-  const totalCOP = calculateTotal(Array.from(currentCheckedIds));
+  
+  // Calcular total usando los módulos actuales
+  const totalCOP = calculateTotal(Array.from(currentCheckedIds), currentModules);
   const totalConverted = convertCurrency(totalCOP, currentCurrency);
   totalDisplay.textContent = formatCurrency(totalConverted, currentCurrency);
 }
@@ -108,7 +107,7 @@ function onModuleCheckChange() {
   if (!isEditMode) updateTotal();
 }
 
-function onCurrencyChange(e) {
+async function onCurrencyChange(e) {
   currentCurrency = e.target.value;
   renderAll();
 }
@@ -117,28 +116,50 @@ async function onAddModule(e) {
   e.preventDefault();
   const desc = moduleDescInput.value.trim();
   const price = parseFloat(modulePriceInput.value);
+  
   if (!desc || isNaN(price) || price <= 0) {
     alert('Por favor, ingrese una descripción y un precio válido (mayor a 0).');
     return;
   }
-  currentModules = addModule(desc, price);
-  moduleDescInput.value = '';
-  modulePriceInput.value = '';
-  renderAll();
+
+  try {
+    // Llamar a la API para agregar
+    await addModule(desc, price);
+    
+    // Recargar la lista desde la BD
+    currentModules = await getModules();
+    
+    // Limpiar inputs
+    moduleDescInput.value = '';
+    modulePriceInput.value = '';
+    
+    // Re-renderizar
+    renderAll();
+  } catch (error) {
+    console.error('Error al agregar módulo:', error);
+    alert('Error al agregar el módulo. Intente de nuevo.');
+  }
 }
 
-function handleDeleteModule(id) {
+async function handleDeleteModule(id) {
   if (!confirm('¿Eliminar este módulo?')) return;
-  currentModules = deleteModule(id);
-  renderAll();
+  
+  try {
+    await deleteModule(id);
+    currentModules = await getModules();
+    renderAll();
+  } catch (error) {
+    console.error('Error al eliminar módulo:', error);
+    alert('Error al eliminar el módulo. Intente de nuevo.');
+  }
 }
 
-function handleEditModule(id) {
+async function handleEditModule(id) {
   const module = currentModules.find(m => m.id === id);
   if (!module) return;
 
   const newDesc = prompt('Nueva descripción:', module.description);
-  if (newDesc === null) return; // Canceló
+  if (newDesc === null) return;
 
   const newPriceStr = prompt('Nuevo precio (COP):', module.price);
   if (newPriceStr === null) return;
@@ -149,17 +170,21 @@ function handleEditModule(id) {
     return;
   }
 
-  currentModules = editModule(id, newDesc, newPrice);
-  renderAll();
+  try {
+    await editModule(id, newDesc, newPrice);
+    currentModules = await getModules();
+    renderAll();
+  } catch (error) {
+    console.error('Error al editar módulo:', error);
+    alert('Error al editar el módulo. Intente de nuevo.');
+  }
 }
 
 function onQuoteAction() {
-  // Verificar que haya al menos un módulo seleccionado
   if (currentCheckedIds.size === 0) {
     alert('Debe seleccionar al menos un módulo para cotizar.');
     return;
   }
-  // Abrir diálogo
   clientNameInput.value = '';
   productNameInput.value = '';
   clientDialog.showModal();
@@ -170,15 +195,24 @@ async function onDialogConfirm(e) {
   e.preventDefault();
   const clientName = clientNameInput.value.trim();
   const productName = productNameInput.value.trim();
+  
   if (!clientName || !productName) {
     alert('Por favor, complete todos los campos.');
     return;
   }
 
-  const totalCOP = calculateTotal(Array.from(currentCheckedIds));
+  // Calcular total en COP usando los módulos actuales
+  const totalCOP = calculateTotal(Array.from(currentCheckedIds), currentModules);
 
   try {
-    await generateQuotePDF(clientName, productName, Array.from(currentCheckedIds), currentCurrency, totalCOP);
+    await generateQuotePDF(
+      clientName,
+      productName,
+      Array.from(currentCheckedIds),
+      currentCurrency,
+      totalCOP,
+      currentModules  // <--- Pasamos los módulos completos
+    );
     clientDialog.close();
   } catch (error) {
     console.error('Error al generar PDF:', error);
@@ -187,7 +221,4 @@ async function onDialogConfirm(e) {
 }
 
 // ---- Iniciar aplicación ----
-init().catch(err => {
-  console.error('Error en la inicialización:', err);
-  alert('No se pudo cargar la aplicación. Revise la consola.');
-});
+init();
