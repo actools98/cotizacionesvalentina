@@ -14,14 +14,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// Servir archivos estáticos (la app)
 app.use(express.static(path.join(__dirname, 'dist')));
 
 let db;
 
 async function initDb() {
-  // Crear carpeta data si no existe
   const dataDir = path.join(__dirname, 'data');
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
@@ -31,17 +28,45 @@ async function initDb() {
     driver: sqlite3.Database
   });
 
+  // Tabla categorías
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0
+    )
+  `);
+
+  // Tabla módulos con categoría y orden
   await db.exec(`
     CREATE TABLE IF NOT EXISTS modules (
       id TEXT PRIMARY KEY,
       description TEXT NOT NULL,
-      price INTEGER NOT NULL
+      price INTEGER NOT NULL,
+      category_id TEXT REFERENCES categories(id),
+      sort_order INTEGER DEFAULT 0
     )
   `);
 
-  // Cargar datos iniciales si la tabla está vacía
-  const row = await db.get('SELECT COUNT(*) as count FROM modules');
-  if (row.count === 0) {
+  // Cargar categorías por defecto si no hay
+  const catCount = await db.get('SELECT COUNT(*) as count FROM categories');
+  if (catCount.count === 0) {
+    const defaultCats = [
+      { id: 'cat-1', name: 'General', sort_order: 0 },
+      { id: 'cat-2', name: 'Consultoría', sort_order: 1 },
+      { id: 'cat-3', name: 'Implementación', sort_order: 2 },
+      { id: 'cat-4', name: 'Capacitación', sort_order: 3 },
+      { id: 'cat-5', name: 'Soporte', sort_order: 4 }
+    ];
+    for (const c of defaultCats) {
+      await db.run('INSERT INTO categories (id, name, sort_order) VALUES (?, ?, ?)', [c.id, c.name, c.sort_order]);
+    }
+    console.log('📂 Categorías por defecto creadas');
+  }
+
+  // Cargar módulos por defecto si no hay
+  const modCount = await db.get('SELECT COUNT(*) as count FROM modules');
+  if (modCount.count === 0) {
     const defaultPath = path.join(__dirname, 'public', 'data', 'default-modules.json');
     let defaults = [];
     if (fs.existsSync(defaultPath)) {
@@ -55,18 +80,86 @@ async function initDb() {
         { id: 'mod-5', description: 'Soporte técnico mensual', price: 280000 }
       ];
     }
-    for (const m of defaults) {
-      await db.run('INSERT INTO modules (id, description, price) VALUES (?, ?, ?)', [m.id, m.description, m.price]);
+    // Asignar categoría por defecto (la primera)
+    const firstCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
+    if (firstCat) {
+      for (let i = 0; i < defaults.length; i++) {
+        const m = defaults[i];
+        await db.run(
+          'INSERT INTO modules (id, description, price, category_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+          [m.id, m.description, m.price, firstCat.id, i]
+        );
+      }
+      console.log('📦 Módulos por defecto cargados');
     }
-    console.log('📦 Datos iniciales cargados en la BD');
   }
+
   console.log('✅ Base de datos lista');
 }
 
-// ---- Rutas API ----
+// ---- Rutas API para categorías ----
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await db.all('SELECT * FROM categories ORDER BY sort_order');
+    res.json(categories);
+  } catch (e) {
+    res.status(500).json({ error: 'Error al obtener categorías' });
+  }
+});
+
+app.post('/api/categories', async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+  try {
+    const id = `cat-${Date.now()}`;
+    const maxOrder = await db.get('SELECT MAX(sort_order) as max FROM categories');
+    const order = (maxOrder?.max ?? -1) + 1;
+    await db.run('INSERT INTO categories (id, name, sort_order) VALUES (?, ?, ?)', [id, name, order]);
+    const newCat = await db.get('SELECT * FROM categories WHERE id = ?', [id]);
+    res.status(201).json(newCat);
+  } catch (e) {
+    res.status(500).json({ error: 'Error al crear categoría' });
+  }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nombre requerido' });
+  try {
+    const result = await db.run('UPDATE categories SET name = ? WHERE id = ?', [name, id]);
+    if (result.changes === 0) return res.status(404).json({ error: 'Categoría no encontrada' });
+    const updated = await db.get('SELECT * FROM categories WHERE id = ?', [id]);
+    res.json(updated);
+  } catch (e) {
+    res.status(500).json({ error: 'Error al actualizar categoría' });
+  }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Mover módulos a una categoría por defecto (la primera)
+    const defaultCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
+    if (defaultCat) {
+      await db.run('UPDATE modules SET category_id = ? WHERE category_id = ?', [defaultCat.id, id]);
+    }
+    await db.run('DELETE FROM categories WHERE id = ?', [id]);
+    res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: 'Error al eliminar categoría' });
+  }
+});
+
+// ---- Rutas API para módulos ----
 app.get('/api/modules', async (req, res) => {
   try {
-    const modules = await db.all('SELECT * FROM modules ORDER BY description');
+    const modules = await db.all(`
+      SELECT m.*, c.name as category_name 
+      FROM modules m 
+      LEFT JOIN categories c ON m.category_id = c.id 
+      ORDER BY c.sort_order, m.sort_order
+    `);
     res.json(modules);
   } catch (e) {
     res.status(500).json({ error: 'Error al obtener módulos' });
@@ -74,13 +167,26 @@ app.get('/api/modules', async (req, res) => {
 });
 
 app.post('/api/modules', async (req, res) => {
-  const { description, price } = req.body;
+  const { description, price, category_id } = req.body;
   if (!description || price === undefined) {
     return res.status(400).json({ error: 'Faltan campos' });
   }
   try {
     const id = `mod-${Date.now()}`;
-    await db.run('INSERT INTO modules (id, description, price) VALUES (?, ?, ?)', [id, description, price]);
+    // Determinar categoría (si no se envía, usar la primera)
+    let catId = category_id;
+    if (!catId) {
+      const firstCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
+      catId = firstCat?.id || null;
+    }
+    // Obtener el último sort_order para esa categoría
+    const maxOrder = await db.get('SELECT MAX(sort_order) as max FROM modules WHERE category_id = ?', [catId]);
+    const order = (maxOrder?.max ?? -1) + 1;
+
+    await db.run(
+      'INSERT INTO modules (id, description, price, category_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+      [id, description, price, catId, order]
+    );
     const newModule = await db.get('SELECT * FROM modules WHERE id = ?', [id]);
     res.status(201).json(newModule);
   } catch (e) {
@@ -90,15 +196,19 @@ app.post('/api/modules', async (req, res) => {
 
 app.put('/api/modules/:id', async (req, res) => {
   const { id } = req.params;
-  const { description, price } = req.body;
+  const { description, price, category_id } = req.body;
   if (!description || price === undefined) {
     return res.status(400).json({ error: 'Faltan campos' });
   }
   try {
-    const result = await db.run('UPDATE modules SET description = ?, price = ? WHERE id = ?', [description, price, id]);
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Módulo no encontrado' });
-    }
+    const updates = [];
+    const params = [];
+    if (description) { updates.push('description = ?'); params.push(description); }
+    if (price !== undefined) { updates.push('price = ?'); params.push(price); }
+    if (category_id) { updates.push('category_id = ?'); params.push(category_id); }
+    if (updates.length === 0) return res.status(400).json({ error: 'Nada que actualizar' });
+    params.push(id);
+    await db.run(`UPDATE modules SET ${updates.join(', ')} WHERE id = ?`, params);
     const updated = await db.get('SELECT * FROM modules WHERE id = ?', [id]);
     res.json(updated);
   } catch (e) {
@@ -109,22 +219,54 @@ app.put('/api/modules/:id', async (req, res) => {
 app.delete('/api/modules/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.run('DELETE FROM modules WHERE id = ?', [id]);
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Módulo no encontrado' });
-    }
+    await db.run('DELETE FROM modules WHERE id = ?', [id]);
     res.status(204).end();
   } catch (e) {
     res.status(500).json({ error: 'Error al eliminar módulo' });
   }
 });
 
-// Para cualquier otra ruta, enviar index.html (SPA)
+// Reordenar módulos
+app.patch('/api/modules/reorder', async (req, res) => {
+  const { items } = req.body; // [{id, category_id, sort_order}, ...]
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ error: 'Se requiere un arreglo de items' });
+  }
+  try {
+    for (const item of items) {
+      await db.run(
+        'UPDATE modules SET category_id = ?, sort_order = ? WHERE id = ?',
+        [item.category_id, item.sort_order, item.id]
+      );
+    }
+    res.status(200).json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al reordenar módulos' });
+  }
+});
+
+// Reordenar categorías
+app.patch('/api/categories/reorder', async (req, res) => {
+  const { items } = req.body; // [{id, sort_order}, ...]
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ error: 'Se requiere un arreglo de items' });
+  }
+  try {
+    for (const item of items) {
+      await db.run('UPDATE categories SET sort_order = ? WHERE id = ?', [item.sort_order, item.id]);
+    }
+    res.status(200).json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Error al reordenar categorías' });
+  }
+});
+
+// Para cualquier otra ruta, enviar index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Iniciar
+// Iniciar servidor
 await initDb();
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
