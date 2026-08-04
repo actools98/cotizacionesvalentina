@@ -8,9 +8,9 @@
   --color-text-secondary: #94A3B8; /* Slate 400 */
   --color-border: #334155;         /* Slate 700 */
 
-  --color-primary: #818CF8;        /* Indigo 400 (más brillante sobre fondo oscuro) */
+  --color-primary: #818CF8;        /* Indigo 400 */
   --color-primary-hover: #6366F1;  /* Indigo 500 */
-  --color-primary-muted: #1E1B4B;  /* Indigo 950 (fondo tenue) */
+  --color-primary-muted: #1E1B4B;  /* Indigo 950 */
   --color-success: #34D399;        /* Emerald 400 */
   --color-danger: #F87171;         /* Red 400 */
 
@@ -133,7 +133,6 @@ header {
   gap: var(--space-sm);
 }
 
-/* Botón de alternancia modo edición */
 .btn-toggle {
   background-color: var(--color-primary);
   color: #FFFFFF;
@@ -212,14 +211,42 @@ header {
 }
 
 /* ============================================================
-   Columna izquierda: lista de módulos (tarjetas)
+   Categorías y listas de módulos
    ============================================================ */
-#modules-container {
+.category-section {
+  margin-bottom: var(--space-lg);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-xs);
+}
+
+.category-header h3 {
+  font-size: var(--text-h2);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.module-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
 }
 
+.module-list .empty-message {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  padding: var(--space-sm) 0;
+}
+
+/* ============================================================
+   Tarjetas de módulo (modo cotización)
+   ============================================================ */
 .module-card {
   display: flex;
   align-items: center;
@@ -277,7 +304,7 @@ header {
 }
 
 /* ============================================================
-   Tarjetas en modo edición (administración)
+   Tarjetas en modo administración (edición)
    ============================================================ */
 .module-card.admin-mode {
   cursor: default;
@@ -326,9 +353,22 @@ header {
 }
 
 /* ============================================================
-   Formulario de agregar (modo edición)
+   Drag & Drop (SortableJS)
    ============================================================ */
-#add-module-form {
+.sortable-ghost {
+  opacity: 0.4;
+  background-color: var(--color-primary-muted);
+  border: 2px dashed var(--color-primary);
+}
+
+.sortable-chosen {
+  box-shadow: var(--shadow-floating);
+}
+
+/* ============================================================
+   Formularios de administración (modo edición)
+   ============================================================ */
+#category-controls {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
@@ -339,8 +379,8 @@ header {
   border: 1px solid var(--color-border);
 }
 
-#add-module-form input {
-  flex: 1 1 140px;
+#category-controls input {
+  flex: 1 1 150px;
   height: 44px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -352,12 +392,62 @@ header {
   transition: border 0.2s ease;
 }
 
-#add-module-form input:focus {
+#category-controls input:focus {
   border-color: var(--color-primary);
   outline: none;
 }
 
-#add-module-form input:focus-visible {
+#category-controls input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+#category-controls .btn {
+  flex: 0 0 auto;
+  height: 44px;
+}
+
+#add-module-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+#add-module-form input,
+#add-module-form select {
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  background-color: var(--color-bg-main);
+  color: var(--color-text-primary);
+  transition: border 0.2s ease;
+}
+
+#add-module-form input {
+  flex: 2 1 140px;
+}
+
+#add-module-form select {
+  flex: 1 1 120px;
+  cursor: pointer;
+}
+
+#add-module-form input:focus,
+#add-module-form select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+#add-module-form input:focus-visible,
+#add-module-form select:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -574,9 +664,27 @@ header {
 }
 
 /* ============================================================
-   Responsive: barra fija en móvil (total)
+   Footer
+   ============================================================ */
+.app-footer {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   Responsive: Móviles y tablets
    ============================================================ */
 @media (max-width: 767px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    margin-bottom: 140px; /* espacio para sidebar fijo */
+  }
+
   .sidebar {
     position: fixed;
     bottom: 0;
@@ -602,26 +710,94 @@ header {
     font-size: 2rem;
   }
 
-  .content-grid {
-    margin-bottom: 120px;
+  .module-card {
+    padding: var(--space-sm);
+    font-size: var(--text-small);
   }
 
+  .module-card .admin-actions .btn {
+    font-size: 0.75rem;
+    padding: 0 var(--space-xs);
+    min-height: 28px;
+  }
+
+  #add-module-form {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  #add-module-form input,
+  #add-module-form select,
+  #add-module-form .btn {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+
+  #category-controls {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  #category-controls input,
+  #category-controls .btn {
+    width: 100%;
+  }
+
+  .category-header {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .category-header .category-actions {
+    display: flex;
+    gap: var(--space-xs);
+    margin-left: auto;
+  }
+
+  .app-footer {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-sm);
+  }
+}
+
+@media (max-width: 480px) {
   header {
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-sm);
   }
 
-  .header-left, .header-right {
+  .header-left,
+  .header-right {
     justify-content: space-between;
   }
 
-  #add-module-form {
-    flex-direction: column;
+  .logo h1 {
+    font-size: 1.5rem;
   }
 
-  #add-module-form input {
-    flex: 1 1 auto;
-    width: 100%;
+  .btn-toggle {
+    font-size: 0.75rem;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 36px;
+  }
+
+  #currency-select {
+    font-size: 0.75rem;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 36px;
+  }
+
+  .summary-card {
+    padding: var(--space-sm);
+  }
+
+  .total-amount {
+    font-size: 1.8rem;
+  }
+
+  #client-dialog {
+    padding: var(--space-md);
+    width: 95%;
   }
 }
