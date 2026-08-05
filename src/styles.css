@@ -1273,3 +1273,21 @@ dialog::backdrop {
   color: var(--color-text-primary);
   font-size: var(--text-body);
 }
+/* ============================================================
+   Corrección de posicionamiento para menú contextual de portafolios
+   ============================================================ */
+
+.pf-context-menu {
+  /* Posición la establece JavaScript con top/left, así que no usar transform */
+  transform: none !important;
+  min-width: 160px;
+  max-width: 260px;
+}
+
+/* En móviles, para que no se salga, dejamos que JS ajuste */
+@media (max-width: 767px) {
+  .pf-context-menu {
+    min-width: 140px;
+    max-width: 90vw;
+  }
+}
