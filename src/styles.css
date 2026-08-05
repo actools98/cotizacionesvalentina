@@ -211,6 +211,142 @@ header {
 }
 
 /* ============================================================
+   Sidebar (total + portafolios)
+   ============================================================ */
+.sidebar {
+  position: sticky;
+  top: var(--space-lg);
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+@media (max-width: 1023px) {
+  .sidebar {
+    position: static;
+    margin-top: var(--space-md);
+  }
+}
+
+/* Total Estimado */
+.summary-card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-floating);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.summary-title {
+  font-size: var(--text-small);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.total-amount {
+  font-family: var(--font-mono);
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+/* Portafolios */
+.portfolios-card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-floating);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.portfolios-dropdown {
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-sm);
+}
+
+#portfolios-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.portfolio-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-bg-main);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.portfolio-item .pf-name {
+  font-weight: 500;
+  font-size: var(--text-small);
+}
+
+.portfolio-item .pf-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.portfolio-item .pf-actions button {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--text-small);
+  padding: 0 var(--space-xs);
+  transition: color 0.2s ease;
+}
+
+.portfolio-item .pf-actions button:hover {
+  color: var(--color-text-primary);
+}
+
+.add-portfolio-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.add-portfolio-form input {
+  flex: 1 1 120px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-sm);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-size: var(--text-small);
+  transition: border 0.2s ease;
+}
+
+.add-portfolio-form input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.add-portfolio-form .btn {
+  height: 36px;
+  font-size: var(--text-small);
+  padding: 0 var(--space-sm);
+}
+
+/* ============================================================
    Categorías y listas de módulos
    ============================================================ */
 .category-section {
@@ -230,6 +366,41 @@ header {
   font-size: var(--text-h2);
   font-weight: 600;
   color: var(--color-text-primary);
+}
+
+.category-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.category-actions .btn {
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  font-size: var(--text-small);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-actions .btn-edit-cat {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+}
+
+.category-actions .btn-edit-cat:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.category-actions .btn-delete-cat {
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+}
+
+.category-actions .btn-delete-cat:hover {
+  filter: brightness(0.85);
+  transform: translateY(-1px);
 }
 
 .module-list {
@@ -471,49 +642,6 @@ header {
 }
 
 /* ============================================================
-   Sidebar (resumen)
-   ============================================================ */
-.sidebar {
-  position: sticky;
-  top: var(--space-lg);
-  align-self: start;
-}
-
-@media (max-width: 1023px) {
-  .sidebar {
-    position: static;
-  }
-}
-
-.summary-card {
-  background: var(--color-bg-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-floating);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.summary-title {
-  font-size: var(--text-small);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.total-amount {
-  font-family: var(--font-mono);
-  font-size: 3rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1.2;
-  word-break: break-word;
-}
-
-/* ============================================================
    Botones generales
    ============================================================ */
 .btn {
@@ -612,11 +740,6 @@ header {
   color: var(--color-text-primary);
 }
 
-#client-dialog p {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-xs);
-}
-
 #client-dialog .form-group {
   margin-bottom: var(--space-md);
 }
@@ -678,35 +801,35 @@ header {
 /* ============================================================
    Responsive: Móviles y tablets
    ============================================================ */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .content-grid {
     grid-template-columns: 1fr;
     gap: var(--space-md);
-    margin-bottom: 140px; /* espacio para sidebar fijo */
   }
 
   .sidebar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 10;
-    background: var(--color-bg-surface);
-    border-radius: 0;
-    box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
-    padding: var(--space-sm);
-    margin: 0;
-    width: 100%;
+    position: static;
+    top: auto;
+    margin-top: var(--space-md);
+  }
+}
+
+@media (max-width: 767px) {
+  .content-grid {
+    gap: var(--space-md);
+    margin-bottom: 0;
   }
 
-  .sidebar .summary-card {
-    border-radius: 0;
-    box-shadow: none;
-    padding: var(--space-sm);
-    gap: var(--space-xs);
+  .sidebar {
+    margin-top: var(--space-md);
   }
 
-  .sidebar .total-amount {
+  .summary-card,
+  .portfolios-card {
+    padding: var(--space-sm);
+  }
+
+  .total-amount {
     font-size: 2rem;
   }
 
@@ -758,6 +881,24 @@ header {
     margin-top: var(--space-lg);
     padding-top: var(--space-sm);
   }
+
+  .add-portfolio-form {
+    flex-direction: column;
+  }
+
+  .add-portfolio-form input,
+  .add-portfolio-form .btn {
+    width: 100%;
+  }
+
+  .portfolio-item {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .portfolio-item .pf-actions {
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 480px) {
@@ -788,7 +929,8 @@ header {
     min-height: 36px;
   }
 
-  .summary-card {
+  .summary-card,
+  .portfolios-card {
     padding: var(--space-sm);
   }
 
