@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>actols · Cotizador</title>
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <!-- Estilos principales -->
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
 <body>
@@ -35,10 +37,12 @@
 
     <!-- Grid principal -->
     <div class="content-grid">
+      <!-- Columna izquierda: módulos -->
       <main id="modules-container">
         <!-- Renderizado dinámico -->
       </main>
 
+      <!-- Sidebar derecho -->
       <aside class="sidebar" id="summary-panel">
         <!-- Total Estimado (visible solo en modo cotizar) -->
         <div class="summary-card" id="total-card">
@@ -47,8 +51,8 @@
           <button class="btn btn-primary btn-block" id="quote-action-btn">Hacer Cotización</button>
         </div>
 
-        <!-- Portafolios (visible siempre) -->
-        <div class="portfolios-card">
+        <!-- Portafolios (visible solo en modo cotizar) -->
+        <div class="portfolios-card" id="portfolios-card">
           <h2 class="summary-title">Portafolios</h2>
           <button class="btn btn-secondary btn-block" id="portfolios-open-btn">Portafolios</button>
         </div>
@@ -73,7 +77,11 @@
     </footer>
   </div>
 
-  <!-- Diálogo Cotización -->
+  <!-- ============================================================
+       DIÁLOGOS MODALES
+  ============================================================ -->
+
+  <!-- Diálogo: Cotización -->
   <dialog id="client-dialog">
     <form method="dialog">
       <h3>Datos de la Cotización</h3>
@@ -92,34 +100,18 @@
     </form>
   </dialog>
 
-  <!-- Diálogo Portafolios -->
+  <!-- Diálogo: Portafolios -->
   <dialog id="portfolios-dialog">
     <div class="dialog-header">
       <h2>Portafolios</h2>
       <button class="dialog-close" id="portfolios-dialog-close">&times;</button>
     </div>
     <div id="portfolios-list-modal">
-      <!-- Se llena dinámicamente -->
-    </div>
-    <div class="dialog-footer">
-      <button class="btn btn-primary" id="add-portfolio-btn-modal">Añadir portafolio</button>
-    </div>
-    <!-- Formulario para añadir (oculto inicialmente) -->
-    <div id="add-portfolio-form-modal" style="display:none; margin-top: var(--space-sm);">
-      <div class="form-group">
-        <label for="new-portfolio-name-modal">Nombre</label>
-        <input type="text" id="new-portfolio-name-modal" placeholder="Nombre del portafolio" />
-      </div>
-      <div class="form-group">
-        <label for="new-portfolio-link-modal">Enlace</label>
-        <input type="url" id="new-portfolio-link-modal" placeholder="https://..." />
-      </div>
-      <button class="btn btn-success" id="save-portfolio-btn">Guardar</button>
-      <button class="btn btn-secondary" id="cancel-add-portfolio-btn">Cancelar</button>
+      <!-- Se renderiza dinámicamente desde JS -->
     </div>
   </dialog>
 
-  <!-- Diálogo Tasas de Cambio -->
+  <!-- Diálogo: Tasas de cambio -->
   <dialog id="rates-dialog">
     <div class="dialog-header">
       <h2>Ajustar tasas de cambio</h2>
@@ -127,12 +119,12 @@
     </div>
     <p>Si la tasa automática no es correcta, puedes ingresar valores manualmente.</p>
     <div class="form-group">
-      <label for="rate-usd">USD (1 COP = ? USD)</label>
-      <input type="number" id="rate-usd" step="0.000001" min="0" placeholder="Ej: 0.00025" />
+      <label for="rate-usd">1000 COP = ? USD</label>
+      <input type="number" id="rate-usd" step="0.000001" min="0" placeholder="Ej: 0.25" />
     </div>
     <div class="form-group">
-      <label for="rate-eur">EUR (1 COP = ? EUR)</label>
-      <input type="number" id="rate-eur" step="0.000001" min="0" placeholder="Ej: 0.00023" />
+      <label for="rate-eur">1000 COP = ? EUR</label>
+      <input type="number" id="rate-eur" step="0.000001" min="0" placeholder="Ej: 0.23" />
     </div>
     <div class="dialog-actions">
       <button class="btn btn-secondary" id="rates-dialog-cancel">Cancelar</button>
@@ -141,6 +133,7 @@
     </div>
   </dialog>
 
+  <!-- Carga del script principal -->
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
