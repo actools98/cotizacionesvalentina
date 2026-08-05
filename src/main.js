@@ -1,4 +1,4 @@
-// main.js - Punto de entrada con categorías, drag & drop, portafolios, tasas manuales
+// main.js - Punto de entrada con categorías, drag & drop, portafolios (menú flotante), tasas manuales
 
 import { getModules, addModule, deleteModule, editModule, reorderModules, getCategories, addCategory, editCategory, deleteCategory, reorderCategories, getPortfolios, addPortfolio, editPortfolio, deletePortfolio } from './state.js';
 import { calculateTotal, getSelectedModules } from './components/quoteCalculator.js';
@@ -24,17 +24,12 @@ const clientNameInput = document.getElementById('client-name-input');
 const productNameInput = document.getElementById('product-name-input');
 const dialogConfirm = document.getElementById('dialog-confirm');
 const dialogCancel = document.getElementById('dialog-cancel');
+const portfoliosCard = document.getElementById('portfolios-card'); // El bloque en el sidebar
 
-// Portafolios
+// Portafolios (modal)
 const portfoliosOpenBtn = document.getElementById('portfolios-open-btn');
 const portfoliosDialog = document.getElementById('portfolios-dialog');
 const portfoliosListModal = document.getElementById('portfolios-list-modal');
-const addPortfolioBtnModal = document.getElementById('add-portfolio-btn-modal');
-const addPortfolioFormModal = document.getElementById('add-portfolio-form-modal');
-const newPortfolioNameModal = document.getElementById('new-portfolio-name-modal');
-const newPortfolioLinkModal = document.getElementById('new-portfolio-link-modal');
-const savePortfolioBtn = document.getElementById('save-portfolio-btn');
-const cancelAddPortfolioBtn = document.getElementById('cancel-add-portfolio-btn');
 const portfoliosDialogClose = document.getElementById('portfolios-dialog-close');
 
 // Tasas
@@ -55,7 +50,7 @@ let currentCurrency = 'COP';
 let currentCheckedIds = new Set();
 let isEditMode = false;
 let sortableInstances = [];
-let editingPortfolioId = null;
+let openPortfolioMenuId = null; // ID del portafolio cuyo menú está abierto
 
 // ---- Inicialización ----
 async function init() {
@@ -66,6 +61,8 @@ async function init() {
     setEditMode(false);
     bindEvents();
     renderPortfoliosModal();
+    // Ocultar/mostrar portafolios según modo inicial
+    updatePortfoliosVisibility();
   } catch (error) {
     console.error('Error en inicialización:', error);
     alert('No se pudo cargar la aplicación.');
@@ -107,9 +104,6 @@ function bindEvents() {
   // Portafolios
   portfoliosOpenBtn.addEventListener('click', openPortfoliosDialog);
   portfoliosDialogClose.addEventListener('click', closePortfoliosDialog);
-  addPortfolioBtnModal.addEventListener('click', showAddPortfolioForm);
-  cancelAddPortfolioBtn.addEventListener('click', hideAddPortfolioForm);
-  savePortfolioBtn.addEventListener('click', onSavePortfolio);
 
   // Tasas
   ratesToggleBtn.addEventListener('click', openRatesDialog);
@@ -117,6 +111,18 @@ function bindEvents() {
   ratesDialogCancel.addEventListener('click', closeRatesDialog);
   ratesDialogSave.addEventListener('click', onSaveRates);
   ratesDialogReset.addEventListener('click', onResetRates);
+
+  // Clic fuera de los menús de portafolios para cerrarlos
+  document.addEventListener('click', (e) => {
+    if (openPortfolioMenuId) {
+      // Verificar si el clic fue fuera del menú y del botón
+      const menu = document.querySelector(`.pf-context-menu[data-id="${openPortfolioMenuId}"]`);
+      const button = document.querySelector(`.pf-name-btn[data-id="${openPortfolioMenuId}"]`);
+      if (menu && button && !menu.contains(e.target) && !button.contains(e.target)) {
+        closePortfolioMenu();
+      }
+    }
+  });
 }
 
 // ---- Render general ----
@@ -141,6 +147,14 @@ function renderAll() {
     destroySortable();
   }
   renderPortfoliosModal();
+  updatePortfoliosVisibility();
+}
+
+function updatePortfoliosVisibility() {
+  // Mostrar portafolios solo en modo cotizar
+  if (portfoliosCard) {
+    portfoliosCard.style.display = isEditMode ? 'none' : 'flex';
+  }
 }
 
 function renderCategoryControls() {
@@ -331,7 +345,7 @@ async function handleDeleteCategory(id) {
   }
 }
 
-// ---- Portafolios: Modal y CRUD ----
+// ---- Portafolios: Modal y CRUD con menú flotante ----
 function openPortfoliosDialog() {
   renderPortfoliosModal();
   portfoliosDialog.showModal();
@@ -339,11 +353,7 @@ function openPortfoliosDialog() {
 
 function closePortfoliosDialog() {
   portfoliosDialog.close();
-  // Limpiar estado de edición
-  editingPortfolioId = null;
-  hideAddPortfolioForm();
-  // Re-renderizar para limpiar formularios de edición abiertos
-  renderPortfoliosModal();
+  closePortfolioMenu();
 }
 
 function renderPortfoliosModal() {
@@ -353,56 +363,68 @@ function renderPortfoliosModal() {
     empty.className = 'empty-message';
     empty.textContent = 'No hay portafolios. Añade uno.';
     portfoliosListModal.appendChild(empty);
+    // Añadir botón "Añadir portafolio" aunque esté vacío
+    appendAddPortfolioButton();
     return;
   }
 
   currentPortfolios.forEach(pf => {
     const item = document.createElement('div');
     item.className = 'portfolio-item-modal';
+
+    // Botón principal (nombre del portafolio)
     const nameBtn = document.createElement('button');
     nameBtn.className = 'pf-name-btn';
     nameBtn.textContent = pf.name;
     nameBtn.dataset.id = pf.id;
-    nameBtn.addEventListener('click', () => togglePortfolioActions(pf.id));
+    nameBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePortfolioMenu(pf.id, nameBtn);
+    });
 
-    const actionsDiv = document.createElement('div');
-    actionsDiv.className = 'pf-actions-modal';
-    actionsDiv.dataset.id = pf.id;
-    actionsDiv.style.display = 'none'; // oculto por defecto
+    // Menú contextual (flotante)
+    const menu = document.createElement('div');
+    menu.className = 'pf-context-menu';
+    menu.dataset.id = pf.id;
+    menu.style.display = 'none'; // oculto por defecto
 
-    // Botones de acción
-    const actions = [
-      { label: 'Abrir', action: 'open', cls: 'btn-primary' },
-      { label: 'Copiar', action: 'copy', cls: 'btn-secondary' },
-      { label: 'Editar', action: 'edit', cls: 'btn-edit' },
-      { label: 'Borrar', action: 'delete', cls: 'btn-danger' }
+    // Opciones del menú
+    const options = [
+      { label: 'Abrir', action: 'open', cls: '' },
+      { label: 'Copiar enlace', action: 'copy', cls: '' },
+      { label: 'Editar', action: 'edit', cls: '' },
+      { label: 'Borrar', action: 'delete', cls: 'danger' }
     ];
-    actions.forEach(a => {
+    options.forEach(opt => {
       const btn = document.createElement('button');
-      btn.className = `btn ${a.cls}`;
-      btn.textContent = a.label;
-      btn.dataset.action = a.action;
+      btn.className = `pf-menu-item ${opt.cls}`;
+      btn.textContent = opt.label;
+      btn.dataset.action = opt.action;
       btn.dataset.id = pf.id;
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        handlePortfolioAction(a.action, pf.id);
+        handlePortfolioAction(opt.action, pf.id);
+        closePortfolioMenu(); // cerrar después de la acción
       });
-      actionsDiv.appendChild(btn);
+      menu.appendChild(btn);
     });
 
-    // Contenedor para formulario de edición (inline)
+    // Formulario de edición (inline, similar al de añadir)
     const editForm = document.createElement('div');
     editForm.className = 'pf-edit-form';
     editForm.dataset.id = pf.id;
     editForm.style.display = 'none';
+
     const editNameInput = document.createElement('input');
     editNameInput.type = 'text';
     editNameInput.placeholder = 'Nombre';
     editNameInput.value = pf.name;
+
     const editLinkInput = document.createElement('input');
     editLinkInput.type = 'url';
     editLinkInput.placeholder = 'Enlace';
     editLinkInput.value = pf.link;
+
     const saveEditBtn = document.createElement('button');
     saveEditBtn.className = 'btn btn-success';
     saveEditBtn.textContent = 'Guardar';
@@ -415,32 +437,125 @@ function renderPortfoliosModal() {
       }
       onEditPortfolio(pf.id, newName, newLink);
     });
+
     const cancelEditBtn = document.createElement('button');
     cancelEditBtn.className = 'btn btn-secondary';
     cancelEditBtn.textContent = 'Cancelar';
     cancelEditBtn.addEventListener('click', () => {
       editForm.style.display = 'none';
-      actionsDiv.style.display = 'flex';
+      menu.style.display = 'flex'; // volver a mostrar menú
     });
+
     editForm.appendChild(editNameInput);
     editForm.appendChild(editLinkInput);
     editForm.appendChild(saveEditBtn);
     editForm.appendChild(cancelEditBtn);
 
     item.appendChild(nameBtn);
-    item.appendChild(actionsDiv);
+    item.appendChild(menu);
     item.appendChild(editForm);
     portfoliosListModal.appendChild(item);
   });
+
+  // Botón "Añadir portafolio" al final
+  appendAddPortfolioButton();
 }
 
-function togglePortfolioActions(id) {
-  // Ocultar todas las acciones y formularios de edición
-  document.querySelectorAll('.pf-actions-modal').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.pf-edit-form').forEach(el => el.style.display = 'none');
-  // Mostrar las acciones del portafolio seleccionado
-  const actions = document.querySelector(`.pf-actions-modal[data-id="${id}"]`);
-  if (actions) actions.style.display = 'flex';
+function appendAddPortfolioButton() {
+  const addContainer = document.createElement('div');
+  addContainer.className = 'add-portfolio-container';
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-primary';
+  addBtn.textContent = '+ Añadir portafolio';
+  addBtn.id = 'add-portfolio-main-btn';
+  addBtn.addEventListener('click', () => {
+    // Ocultar el botón de añadir y mostrar el formulario
+    const container = addBtn.parentElement;
+    const form = container.querySelector('.add-portfolio-form-inline');
+    if (form) {
+      form.style.display = 'flex';
+      addBtn.style.display = 'none';
+    } else {
+      // Crear formulario inline
+      const newForm = document.createElement('div');
+      newForm.className = 'add-portfolio-form-inline pf-edit-form';
+      const inputName = document.createElement('input');
+      inputName.type = 'text';
+      inputName.placeholder = 'Nombre';
+      inputName.id = 'new-pf-name';
+      const inputLink = document.createElement('input');
+      inputLink.type = 'url';
+      inputLink.placeholder = 'Enlace';
+      inputLink.id = 'new-pf-link';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn btn-success';
+      saveBtn.textContent = 'Guardar';
+      saveBtn.addEventListener('click', () => {
+        const name = inputName.value.trim();
+        const link = inputLink.value.trim();
+        if (!name || !link) {
+          alert('Complete ambos campos.');
+          return;
+        }
+        onAddPortfolio(name, link);
+      });
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-secondary';
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.addEventListener('click', () => {
+        newForm.style.display = 'none';
+        addBtn.style.display = 'block';
+      });
+      newForm.appendChild(inputName);
+      newForm.appendChild(inputLink);
+      newForm.appendChild(saveBtn);
+      newForm.appendChild(cancelBtn);
+      container.appendChild(newForm);
+      addBtn.style.display = 'none';
+      newForm.style.display = 'flex';
+    }
+  });
+  addContainer.appendChild(addBtn);
+  portfoliosListModal.appendChild(addContainer);
+}
+
+function togglePortfolioMenu(id, buttonElement) {
+  const menu = document.querySelector(`.pf-context-menu[data-id="${id}"]`);
+  if (!menu) return;
+  // Si el menú ya está abierto y es el mismo, lo cerramos
+  if (openPortfolioMenuId === id && menu.style.display === 'flex') {
+    closePortfolioMenu();
+    return;
+  }
+  // Cerrar cualquier menú abierto
+  closePortfolioMenu();
+  // Mostrar el nuevo menú
+  menu.style.display = 'flex';
+  openPortfolioMenuId = id;
+  // Posicionar el menú cerca del botón (usando fixed para que no se desborde)
+  const rect = buttonElement.getBoundingClientRect();
+  const menuWidth = 200; // ancho aproximado
+  let left = rect.left + rect.width / 2 - menuWidth / 2;
+  let top = rect.bottom + 6;
+  // Ajustar para que no se salga de la pantalla
+  const maxLeft = window.innerWidth - menuWidth - 10;
+  if (left > maxLeft) left = maxLeft;
+  if (left < 10) left = 10;
+  if (top + menu.offsetHeight > window.innerHeight) {
+    top = rect.top - menu.offsetHeight - 6;
+  }
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.style.position = 'fixed';
+  menu.style.zIndex = '1000';
+}
+
+function closePortfolioMenu() {
+  if (openPortfolioMenuId) {
+    const menu = document.querySelector(`.pf-context-menu[data-id="${openPortfolioMenuId}"]`);
+    if (menu) menu.style.display = 'none';
+    openPortfolioMenuId = null;
+  }
 }
 
 function handlePortfolioAction(action, id) {
@@ -453,7 +568,6 @@ function handlePortfolioAction(action, id) {
       navigator.clipboard.writeText(pf.link).then(() => {
         alert('Enlace copiado al portapapeles.');
       }).catch(() => {
-        // Fallback
         const textArea = document.createElement('textarea');
         textArea.value = pf.link;
         document.body.appendChild(textArea);
@@ -464,11 +578,11 @@ function handlePortfolioAction(action, id) {
       });
     }
   } else if (action === 'edit') {
-    // Mostrar formulario de edición inline
-    const actionsDiv = document.querySelector(`.pf-actions-modal[data-id="${id}"]`);
+    // Mostrar formulario de edición inline y ocultar menú
+    const menu = document.querySelector(`.pf-context-menu[data-id="${id}"]`);
     const editForm = document.querySelector(`.pf-edit-form[data-id="${id}"]`);
-    if (actionsDiv && editForm) {
-      actionsDiv.style.display = 'none';
+    if (menu && editForm) {
+      menu.style.display = 'none';
       editForm.style.display = 'flex';
       // Rellenar con datos actuales
       const pf = currentPortfolios.find(p => p.id === id);
@@ -477,6 +591,7 @@ function handlePortfolioAction(action, id) {
         editForm.querySelector('input[type="url"]').value = pf.link;
       }
     }
+    closePortfolioMenu(); // cerrar el menú flotante
   } else if (action === 'delete') {
     if (confirm('¿Eliminar este portafolio?')) {
       onDeletePortfolio(id);
@@ -484,27 +599,10 @@ function handlePortfolioAction(action, id) {
   }
 }
 
-function showAddPortfolioForm() {
-  addPortfolioFormModal.style.display = 'block';
-  newPortfolioNameModal.value = '';
-  newPortfolioLinkModal.value = '';
-}
-
-function hideAddPortfolioForm() {
-  addPortfolioFormModal.style.display = 'none';
-}
-
-async function onSavePortfolio() {
-  const name = newPortfolioNameModal.value.trim();
-  const link = newPortfolioLinkModal.value.trim();
-  if (!name || !link) {
-    alert('Ingrese nombre y enlace.');
-    return;
-  }
+async function onAddPortfolio(name, link) {
   try {
     await addPortfolio(name, link);
     currentPortfolios = await getPortfolios();
-    hideAddPortfolioForm();
     renderPortfoliosModal();
   } catch (error) {
     console.error('Error al agregar portafolio:', error);
@@ -534,12 +632,13 @@ async function onDeletePortfolio(id) {
   }
 }
 
-// ---- Tasas de cambio personalizadas ----
+// ---- Tasas de cambio personalizadas (base 1000 COP) ----
 function openRatesDialog() {
   const rates = getCurrentRates();
   if (rates) {
-    rateUsdInput.value = rates.USD;
-    rateEurInput.value = rates.EUR;
+    // Mostrar valor por 1000 COP
+    rateUsdInput.value = rates.USD * 1000;
+    rateEurInput.value = rates.EUR * 1000;
   } else {
     rateUsdInput.value = '';
     rateEurInput.value = '';
@@ -558,10 +657,9 @@ function onSaveRates() {
     alert('Ingrese valores numéricos positivos.');
     return;
   }
-  saveManualRates(usd, eur);
-  // Refrescar tasas en el conversor
+  // Guardar tasa por 1 COP (dividir entre 1000)
+  saveManualRates(usd / 1000, eur / 1000);
   fetchExchangeRates(true);
-  // Actualizar la vista con la nueva moneda
   renderAll();
   closeRatesDialog();
   alert('Tasas guardadas correctamente.');
