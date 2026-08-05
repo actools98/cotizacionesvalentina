@@ -40,15 +40,12 @@ export function createModuleCard(module, currency, convertFn, formatFn) {
  */
 export function renderModulesByCategory(container, modules, categories, currency, convertFn, formatFn) {
   container.innerHTML = '';
-
   if (!categories || categories.length === 0) {
     const msg = document.createElement('p');
     msg.textContent = 'No hay categorías. Agrega una desde el modo Editar.';
     container.appendChild(msg);
     return;
   }
-
-  // Agrupar módulos por categoría
   const grouped = {};
   categories.forEach(cat => {
     grouped[cat.id] = {
@@ -56,8 +53,6 @@ export function renderModulesByCategory(container, modules, categories, currency
       modules: modules.filter(m => m.category_id === cat.id) || []
     };
   });
-
-  // Renderizar cada categoría
   for (const catId in grouped) {
     const { category, modules: mods } = grouped[catId];
     const section = document.createElement('div');
@@ -86,7 +81,6 @@ export function renderModulesByCategory(container, modules, categories, currency
         list.appendChild(card);
       });
     }
-
     section.appendChild(list);
     container.appendChild(section);
   }
@@ -98,7 +92,6 @@ export function renderModulesByCategory(container, modules, categories, currency
  */
 export function createAdminModuleCard(module, onDelete, onEdit) {
   const { id, description, price } = module;
-
   const card = document.createElement('div');
   card.className = 'module-card admin-mode';
   card.dataset.id = id;
@@ -143,18 +136,16 @@ export function createAdminModuleCard(module, onDelete, onEdit) {
 
 /**
  * Renderiza la lista de módulos agrupados por categoría en modo administración
+ * con botones para editar/eliminar categoría
  */
-export function renderAdminModulesByCategory(container, modules, categories, onDelete, onEdit) {
+export function renderAdminModulesByCategory(container, modules, categories, onDeleteModule, onEditModule, onEditCategory, onDeleteCategory) {
   container.innerHTML = '';
-
   if (!categories || categories.length === 0) {
     const msg = document.createElement('p');
     msg.textContent = 'No hay categorías. Agrega una.';
     container.appendChild(msg);
     return;
   }
-
-  // Agrupar módulos por categoría
   const grouped = {};
   categories.forEach(cat => {
     grouped[cat.id] = {
@@ -162,7 +153,6 @@ export function renderAdminModulesByCategory(container, modules, categories, onD
       modules: modules.filter(m => m.category_id === cat.id) || []
     };
   });
-
   for (const catId in grouped) {
     const { category, modules: mods } = grouped[catId];
     const section = document.createElement('div');
@@ -171,10 +161,34 @@ export function renderAdminModulesByCategory(container, modules, categories, onD
 
     const header = document.createElement('div');
     header.className = 'category-header';
+
     const title = document.createElement('h3');
     title.textContent = category.name;
     header.appendChild(title);
-    // botones para editar/eliminar categoría (se añadirán después en main)
+
+    // Botones de acción para categoría
+    const actions = document.createElement('div');
+    actions.className = 'category-actions';
+
+    const editCatBtn = document.createElement('button');
+    editCatBtn.className = 'btn btn-edit-cat';
+    editCatBtn.textContent = 'Editar';
+    editCatBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onEditCategory(category.id);
+    });
+
+    const deleteCatBtn = document.createElement('button');
+    deleteCatBtn.className = 'btn btn-delete-cat';
+    deleteCatBtn.textContent = 'Eliminar';
+    deleteCatBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onDeleteCategory(category.id);
+    });
+
+    actions.appendChild(editCatBtn);
+    actions.appendChild(deleteCatBtn);
+    header.appendChild(actions);
     section.appendChild(header);
 
     const list = document.createElement('div');
@@ -188,11 +202,10 @@ export function renderAdminModulesByCategory(container, modules, categories, onD
       list.appendChild(empty);
     } else {
       mods.forEach(mod => {
-        const card = createAdminModuleCard(mod, onDelete, onEdit);
+        const card = createAdminModuleCard(mod, onDeleteModule, onEditModule);
         list.appendChild(card);
       });
     }
-
     section.appendChild(list);
     container.appendChild(section);
   }
