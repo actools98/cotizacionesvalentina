@@ -1,4 +1,4 @@
-// main.js - Punto de entrada con categorías, drag & drop, portafolios (menú flotante), tasas manuales
+// main.js - Portafolios con acordeón horizontal y animación
 
 import { getModules, addModule, deleteModule, editModule, reorderModules, getCategories, addCategory, editCategory, deleteCategory, reorderCategories, getPortfolios, addPortfolio, editPortfolio, deletePortfolio } from './state.js';
 import { calculateTotal, getSelectedModules } from './components/quoteCalculator.js';
@@ -26,7 +26,7 @@ const dialogConfirm = document.getElementById('dialog-confirm');
 const dialogCancel = document.getElementById('dialog-cancel');
 const portfoliosCard = document.getElementById('portfolios-card');
 
-// Portafolios (modal)
+// Portafolios
 const portfoliosOpenBtn = document.getElementById('portfolios-open-btn');
 const portfoliosDialog = document.getElementById('portfolios-dialog');
 const portfoliosListModal = document.getElementById('portfolios-list-modal');
@@ -50,7 +50,7 @@ let currentCurrency = 'COP';
 let currentCheckedIds = new Set();
 let isEditMode = false;
 let sortableInstances = [];
-let openPortfolioMenuId = null;
+let openPortfolioId = null; // ID del portafolio con acciones visibles
 
 // ---- Inicialización ----
 async function init() {
@@ -111,13 +111,12 @@ function bindEvents() {
   ratesDialogSave.addEventListener('click', onSaveRates);
   ratesDialogReset.addEventListener('click', onResetRates);
 
-  // Clic fuera de los menús de portafolios para cerrarlos
+  // Clic fuera para cerrar acciones (opcional)
   document.addEventListener('click', (e) => {
-    if (openPortfolioMenuId) {
-      const menu = document.querySelector(`.pf-context-menu[data-id="${openPortfolioMenuId}"]`);
-      const button = document.querySelector(`.pf-name-btn[data-id="${openPortfolioMenuId}"]`);
-      if (menu && button && !menu.contains(e.target) && !button.contains(e.target)) {
-        closePortfolioMenu();
+    if (openPortfolioId) {
+      const item = document.querySelector(`.portfolio-item-modal[data-id="${openPortfolioId}"]`);
+      if (item && !item.contains(e.target)) {
+        closePortfolioActions();
       }
     }
   });
@@ -341,7 +340,7 @@ async function handleDeleteCategory(id) {
   }
 }
 
-// ---- Portafolios: Modal y CRUD con menú flotante ----
+// ---- Portafolios: Modal con acordeón horizontal ----
 function openPortfoliosDialog() {
   renderPortfoliosModal();
   portfoliosDialog.showModal();
@@ -349,7 +348,7 @@ function openPortfoliosDialog() {
 
 function closePortfoliosDialog() {
   portfoliosDialog.close();
-  closePortfolioMenu();
+  closePortfolioActions();
 }
 
 function renderPortfoliosModal() {
@@ -366,41 +365,61 @@ function renderPortfoliosModal() {
   currentPortfolios.forEach(pf => {
     const item = document.createElement('div');
     item.className = 'portfolio-item-modal';
+    item.dataset.id = pf.id;
 
+    // Botón principal (nombre del portafolio)
     const nameBtn = document.createElement('button');
     nameBtn.className = 'pf-name-btn';
     nameBtn.textContent = pf.name;
     nameBtn.dataset.id = pf.id;
     nameBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      togglePortfolioMenu(pf.id, nameBtn);
+      togglePortfolioActions(pf.id);
     });
 
-    const menu = document.createElement('div');
-    menu.className = 'pf-context-menu';
-    menu.dataset.id = pf.id;
-    menu.style.display = 'none';
+    // Contenedor de acciones (horizontal)
+    const actionsContainer = document.createElement('div');
+    actionsContainer.className = 'pf-actions-container';
+    actionsContainer.dataset.id = pf.id;
+    // Oculto por defecto
+    actionsContainer.style.maxHeight = '0';
+    actionsContainer.style.opacity = '0';
+    actionsContainer.style.overflow = 'hidden';
+    actionsContainer.style.transition = 'max-height 0.3s ease, opacity 0.25s ease, margin 0.3s ease';
+    actionsContainer.style.marginTop = '0';
 
-    const options = [
-      { label: 'Abrir', action: 'open', cls: '' },
-      { label: 'Copiar enlace', action: 'copy', cls: '' },
-      { label: 'Editar', action: 'edit', cls: '' },
-      { label: 'Borrar', action: 'delete', cls: 'danger' }
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'pf-actions-wrapper';
+
+    // Botones de acción
+    const actions = [
+      { label: 'Abrir', action: 'open', icon: '🔗' },
+      { label: 'Copiar', action: 'copy', icon: '📋' },
+      { label: 'Editar', action: 'edit', icon: '✏️' },
+      { label: 'Borrar', action: 'delete', icon: '🗑️', danger: true }
     ];
-    options.forEach(opt => {
+    actions.forEach(a => {
       const btn = document.createElement('button');
-      btn.className = `pf-menu-item ${opt.cls}`;
-      btn.textContent = opt.label;
-      btn.dataset.action = opt.action;
+      btn.className = `pf-action-btn ${a.danger ? 'danger' : ''}`;
+      btn.innerHTML = `${a.icon} ${a.label}`;
+      btn.dataset.action = a.action;
       btn.dataset.id = pf.id;
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        handlePortfolioAction(opt.action, pf.id);
-        closePortfolioMenu();
+        handlePortfolioAction(a.action, pf.id);
+        // Si la acción no es 'editar', cerramos el panel
+        if (a.action !== 'edit') {
+          closePortfolioActions();
+        }
       });
-      menu.appendChild(btn);
+      actionsWrapper.appendChild(btn);
     });
 
+    actionsContainer.appendChild(actionsWrapper);
+    item.appendChild(nameBtn);
+    item.appendChild(actionsContainer);
+
+    // Formulario de edición (inline)
     const editForm = document.createElement('div');
     editForm.className = 'pf-edit-form';
     editForm.dataset.id = pf.id;
@@ -434,7 +453,10 @@ function renderPortfoliosModal() {
     cancelEditBtn.textContent = 'Cancelar';
     cancelEditBtn.addEventListener('click', () => {
       editForm.style.display = 'none';
-      menu.style.display = 'flex';
+      // Volver a mostrar las acciones
+      actionsContainer.style.maxHeight = actionsContainer.scrollHeight + 'px';
+      actionsContainer.style.opacity = '1';
+      actionsContainer.style.marginTop = 'var(--space-sm)';
     });
 
     editForm.appendChild(editNameInput);
@@ -442,8 +464,6 @@ function renderPortfoliosModal() {
     editForm.appendChild(saveEditBtn);
     editForm.appendChild(cancelEditBtn);
 
-    item.appendChild(nameBtn);
-    item.appendChild(menu);
     item.appendChild(editForm);
     portfoliosListModal.appendChild(item);
   });
@@ -464,6 +484,7 @@ function appendAddPortfolioButton() {
     if (!form) {
       form = document.createElement('div');
       form.className = 'add-portfolio-form-inline pf-edit-form';
+      form.style.display = 'none';
       const inputName = document.createElement('input');
       inputName.type = 'text';
       inputName.placeholder = 'Nombre';
@@ -504,72 +525,55 @@ function appendAddPortfolioButton() {
   portfoliosListModal.appendChild(addContainer);
 }
 
-// --- MENÚ FLOTANTE (CORREGIDO) ---
-function togglePortfolioMenu(id, buttonElement) {
-  const menu = document.querySelector(`.pf-context-menu[data-id="${id}"]`);
-  if (!menu) return;
+// --- Funciones de acordeón ---
+function togglePortfolioActions(id) {
+  const item = document.querySelector(`.portfolio-item-modal[data-id="${id}"]`);
+  if (!item) return;
+  const actionsContainer = item.querySelector('.pf-actions-container');
+  if (!actionsContainer) return;
 
-  // Si el menú ya está abierto y es el mismo, lo cerramos
-  if (openPortfolioMenuId === id && menu.style.display === 'flex') {
-    closePortfolioMenu();
+  // Si este portafolio ya está abierto, lo cerramos
+  if (openPortfolioId === id && actionsContainer.style.maxHeight !== '0px') {
+    closePortfolioActions();
     return;
   }
 
-  // Cerrar cualquier menú abierto
-  closePortfolioMenu();
+  // Cerrar cualquier otro abierto
+  closePortfolioActions();
 
-  // Mostrar el menú para poder medir su tamaño
-  menu.style.display = 'flex';
-  menu.style.position = 'fixed';
-  menu.style.zIndex = '1000';
-
-  // Obtener dimensiones
-  const rect = buttonElement.getBoundingClientRect();
-  const menuRect = menu.getBoundingClientRect();
-  const menuWidth = menuRect.width;
-  const menuHeight = menuRect.height;
-
-  // Calcular posición horizontal (centrado)
-  let left = rect.left + rect.width / 2 - menuWidth / 2;
-  // Ajustar para que no se salga de la pantalla
-  const maxLeft = window.innerWidth - menuWidth - 10;
-  if (left < 10) left = 10;
-  if (left > maxLeft) left = maxLeft;
-
-  // Calcular posición vertical: primero intentar arriba, si no cabe abajo
-  let top = rect.top - menuHeight - 6;
-  if (top < 10) {
-    // No cabe arriba, colocar abajo
-    top = rect.bottom + 6;
-    if (top + menuHeight > window.innerHeight - 10) {
-      // Si tampoco cabe abajo, forzar arriba con scroll
-      top = 10;
-    }
-  }
-
-  // Aplicar posición
-  menu.style.left = `${left}px`;
-  menu.style.top = `${top}px`;
-
-  // Guardar el ID del menú abierto
-  openPortfolioMenuId = id;
+  // Abrir el nuevo
+  actionsContainer.style.maxHeight = actionsContainer.scrollHeight + 'px';
+  actionsContainer.style.opacity = '1';
+  actionsContainer.style.marginTop = 'var(--space-sm)';
+  openPortfolioId = id;
 }
 
-function closePortfolioMenu() {
-  if (openPortfolioMenuId) {
-    const menu = document.querySelector(`.pf-context-menu[data-id="${openPortfolioMenuId}"]`);
-    if (menu) menu.style.display = 'none';
-    openPortfolioMenuId = null;
+function closePortfolioActions() {
+  if (openPortfolioId) {
+    const item = document.querySelector(`.portfolio-item-modal[data-id="${openPortfolioId}"]`);
+    if (item) {
+      const actionsContainer = item.querySelector('.pf-actions-container');
+      if (actionsContainer) {
+        actionsContainer.style.maxHeight = '0';
+        actionsContainer.style.opacity = '0';
+        actionsContainer.style.marginTop = '0';
+      }
+      // Ocultar formulario de edición si está visible
+      const editForm = item.querySelector('.pf-edit-form');
+      if (editForm) editForm.style.display = 'none';
+    }
+    openPortfolioId = null;
   }
 }
 
 function handlePortfolioAction(action, id) {
+  const pf = currentPortfolios.find(p => p.id === id);
+  if (!pf) return;
+
   if (action === 'open') {
-    const pf = currentPortfolios.find(p => p.id === id);
-    if (pf && pf.link) window.open(pf.link, '_blank');
+    if (pf.link) window.open(pf.link, '_blank');
   } else if (action === 'copy') {
-    const pf = currentPortfolios.find(p => p.id === id);
-    if (pf && pf.link) {
+    if (pf.link) {
       navigator.clipboard.writeText(pf.link).then(() => {
         alert('Enlace copiado al portapapeles.');
       }).catch(() => {
@@ -583,18 +587,25 @@ function handlePortfolioAction(action, id) {
       });
     }
   } else if (action === 'edit') {
-    const menu = document.querySelector(`.pf-context-menu[data-id="${id}"]`);
-    const editForm = document.querySelector(`.pf-edit-form[data-id="${id}"]`);
-    if (menu && editForm) {
-      menu.style.display = 'none';
-      editForm.style.display = 'flex';
-      const pf = currentPortfolios.find(p => p.id === id);
-      if (pf) {
-        editForm.querySelector('input[type="text"]').value = pf.name;
-        editForm.querySelector('input[type="url"]').value = pf.link;
+    // Mostrar formulario de edición y ocultar acciones
+    const item = document.querySelector(`.portfolio-item-modal[data-id="${id}"]`);
+    if (item) {
+      const actionsContainer = item.querySelector('.pf-actions-container');
+      const editForm = item.querySelector('.pf-edit-form');
+      if (actionsContainer && editForm) {
+        actionsContainer.style.maxHeight = '0';
+        actionsContainer.style.opacity = '0';
+        actionsContainer.style.marginTop = '0';
+        editForm.style.display = 'flex';
+        // Rellenar datos
+        const inputs = editForm.querySelectorAll('input');
+        if (inputs.length >= 2) {
+          inputs[0].value = pf.name;
+          inputs[1].value = pf.link;
+        }
       }
     }
-    closePortfolioMenu();
+    closePortfolioActions(); // Cerrar menú de acciones (ya que estamos en edición)
   } else if (action === 'delete') {
     if (confirm('¿Eliminar este portafolio?')) {
       onDeletePortfolio(id);
