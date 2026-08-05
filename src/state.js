@@ -1,4 +1,4 @@
-// state.js - Comunicación con la API (incluye categorías)
+// state.js - Comunicación con la API
 
 const API_URL = '/api';
 
@@ -86,4 +86,37 @@ export async function reorderCategories(items) {
   });
   if (!res.ok) throw new Error('Error al reordenar categorías');
   return res.json();
+}
+
+// ---- Portafolios ----
+export async function getPortfolios() {
+  const res = await fetch(`${API_URL}/portfolios`);
+  if (!res.ok) throw new Error('Error al obtener portafolios');
+  return res.json();
+}
+
+export async function addPortfolio(name, link) {
+  const res = await fetch(`${API_URL}/portfolios`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, link })
+  });
+  if (!res.ok) throw new Error('Error al agregar portafolio');
+  return res.json();
+}
+
+export async function editPortfolio(id, name, link) {
+  const res = await fetch(`${API_URL}/portfolios/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, link })
+  });
+  if (!res.ok) throw new Error('Error al editar portafolio');
+  return res.json();
+}
+
+export async function deletePortfolio(id) {
+  const res = await fetch(`${API_URL}/portfolios/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Error al eliminar portafolio');
+  return true;
 }
