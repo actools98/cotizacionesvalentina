@@ -943,3 +943,183 @@ header {
     width: 95%;
   }
 }
+/* ============================================================
+   Estilos adicionales para botones de categoría, diálogos, etc.
+   ============================================================ */
+
+/* Botones de categoría en modo edición */
+.category-actions .btn-edit-cat,
+.category-actions .btn-delete-cat {
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  font-size: var(--text-small);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.category-actions .btn-edit-cat {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+}
+.category-actions .btn-edit-cat:hover {
+  background-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+.category-actions .btn-delete-cat {
+  background-color: var(--color-danger);
+  color: #FFFFFF;
+}
+.category-actions .btn-delete-cat:hover {
+  filter: brightness(0.85);
+  transform: translateY(-1px);
+}
+
+/* Botón Tasas */
+.btn-rates {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-small);
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+.btn-rates:hover {
+  background-color: var(--color-bg-surface);
+  border-color: var(--color-text-secondary);
+}
+
+/* Diálogos (Portafolios y Tasas) */
+dialog {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  max-width: 600px;
+  width: 90%;
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-floating);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-sm);
+}
+.dialog-header h2 {
+  font-size: var(--text-h2);
+  color: var(--color-text-primary);
+}
+.dialog-close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.dialog-close:hover {
+  color: var(--color-text-primary);
+}
+.dialog-footer {
+  margin-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-sm);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Portafolios en modal */
+.portfolio-item-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.pf-name-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: var(--text-body);
+  cursor: pointer;
+  text-align: left;
+  padding: var(--space-xs) 0;
+  transition: color 0.2s ease;
+}
+.pf-name-btn:hover {
+  color: var(--color-primary-hover);
+}
+.pf-actions-modal {
+  display: none;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+.pf-actions-modal .btn {
+  font-size: var(--text-small);
+  padding: 0 var(--space-sm);
+  min-height: 32px;
+}
+.pf-edit-form {
+  display: none;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+  padding: var(--space-sm);
+  background: var(--color-bg-main);
+  border-radius: var(--radius-sm);
+}
+.pf-edit-form input {
+  flex: 1 1 150px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-sm);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  font-size: var(--text-small);
+}
+.pf-edit-form .btn {
+  height: 36px;
+  font-size: var(--text-small);
+}
+
+/* Responsive para diálogos */
+@media (max-width: 480px) {
+  dialog {
+    padding: var(--space-md);
+    width: 95%;
+  }
+  .pf-actions-modal {
+    flex-direction: column;
+    width: 100%;
+  }
+  .pf-actions-modal .btn {
+    width: 100%;
+  }
+  .pf-edit-form {
+    flex-direction: column;
+  }
+  .pf-edit-form input {
+    width: 100%;
+  }
+  .pf-edit-form .btn {
+    width: 100%;
+  }
+}
