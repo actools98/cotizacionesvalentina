@@ -1,5 +1,9 @@
-// main.js - Portafolios con acordeón horizontal y animación
+// ============================================================
+//  main.js - Con autenticación por contraseña (1998)
+//  y persistencia de datos en Coolify (SQLite + volumen)
+// ============================================================
 
+// ---- Imports ----
 import { getModules, addModule, deleteModule, editModule, reorderModules, getCategories, addCategory, editCategory, deleteCategory, reorderCategories, getPortfolios, addPortfolio, editPortfolio, deletePortfolio } from './state.js';
 import { calculateTotal, getSelectedModules } from './components/quoteCalculator.js';
 import { fetchExchangeRates, convertCurrency, startAutoRefresh, saveManualRates, getCurrentRates } from './components/currencyConverter.js';
@@ -8,7 +12,56 @@ import { renderModulesByCategory, renderAdminModulesByCategory } from './utils/d
 import { formatCurrency } from './utils/formatters.js';
 import Sortable from 'sortablejs';
 
-// ---- DOM ----
+// ============================================================
+//  AUTENTICACIÓN (LOGIN)
+// ============================================================
+const PASSWORD = '1998';
+const loginOverlay = document.getElementById('login-overlay');
+const appWrapper = document.getElementById('app-wrapper');
+const passwordInput = document.getElementById('password-input');
+const loginBtn = document.getElementById('login-btn');
+const loginError = document.getElementById('login-error');
+const logoutBtn = document.getElementById('logout-btn');
+
+// Verificar si ya está autenticado
+const auth = localStorage.getItem('auth');
+if (auth === 'true') {
+  loginOverlay.style.display = 'none';
+  appWrapper.style.display = 'block';
+} else {
+  loginOverlay.style.display = 'flex';
+  appWrapper.style.display = 'none';
+}
+
+loginBtn.addEventListener('click', () => {
+  const pass = passwordInput.value;
+  if (pass === PASSWORD) {
+    localStorage.setItem('auth', 'true');
+    loginOverlay.style.display = 'none';
+    appWrapper.style.display = 'block';
+    if (!window.appInitialized) {
+      window.appInitialized = true;
+      initApp();
+    }
+  } else {
+    loginError.style.display = 'block';
+    passwordInput.value = '';
+    passwordInput.focus();
+  }
+});
+
+passwordInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') loginBtn.click();
+});
+
+logoutBtn.addEventListener('click', () => {
+  localStorage.removeItem('auth');
+  location.reload();
+});
+
+// ============================================================
+//  ESTADO GLOBAL Y DOM
+// ============================================================
 const modulesContainer = document.getElementById('modules-container');
 const totalDisplay = document.getElementById('total-display');
 const currencySelect = document.getElementById('currency-select');
@@ -26,13 +79,11 @@ const dialogConfirm = document.getElementById('dialog-confirm');
 const dialogCancel = document.getElementById('dialog-cancel');
 const portfoliosCard = document.getElementById('portfolios-card');
 
-// Portafolios
 const portfoliosOpenBtn = document.getElementById('portfolios-open-btn');
 const portfoliosDialog = document.getElementById('portfolios-dialog');
 const portfoliosListModal = document.getElementById('portfolios-list-modal');
 const portfoliosDialogClose = document.getElementById('portfolios-dialog-close');
 
-// Tasas
 const ratesToggleBtn = document.getElementById('rates-toggle-btn');
 const ratesDialog = document.getElementById('rates-dialog');
 const rateUsdInput = document.getElementById('rate-usd');
@@ -50,10 +101,12 @@ let currentCurrency = 'COP';
 let currentCheckedIds = new Set();
 let isEditMode = false;
 let sortableInstances = [];
-let openPortfolioId = null; // ID del portafolio con acciones visibles
+let openPortfolioId = null;
 
-// ---- Inicialización ----
-async function init() {
+// ============================================================
+//  INICIALIZACIÓN DE LA APP (solo se ejecuta tras login)
+// ============================================================
+async function initApp() {
   try {
     await loadData();
     startAutoRefresh();
@@ -100,18 +153,16 @@ function bindEvents() {
   dialogConfirm.addEventListener('click', onDialogConfirm);
   dialogCancel.addEventListener('click', () => clientDialog.close());
 
-  // Portafolios
   portfoliosOpenBtn.addEventListener('click', openPortfoliosDialog);
   portfoliosDialogClose.addEventListener('click', closePortfoliosDialog);
 
-  // Tasas
   ratesToggleBtn.addEventListener('click', openRatesDialog);
   ratesDialogClose.addEventListener('click', closeRatesDialog);
   ratesDialogCancel.addEventListener('click', closeRatesDialog);
   ratesDialogSave.addEventListener('click', onSaveRates);
   ratesDialogReset.addEventListener('click', onResetRates);
 
-  // Clic fuera para cerrar acciones (opcional)
+  // Cerrar panel de portafolios al hacer clic fuera
   document.addEventListener('click', (e) => {
     if (openPortfolioId) {
       const item = document.querySelector(`.portfolio-item-modal[data-id="${openPortfolioId}"]`);
@@ -122,7 +173,9 @@ function bindEvents() {
   });
 }
 
-// ---- Render general ----
+// ============================================================
+//  RENDER Y MODO EDICIÓN
+// ============================================================
 function renderAll() {
   if (isEditMode) {
     renderAdminModulesByCategory(modulesContainer, currentModules, currentCategories, handleDeleteModule, handleEditModule, handleEditCategory, handleDeleteCategory);
@@ -183,7 +236,6 @@ function updateTotal() {
   totalDisplay.textContent = formatCurrency(totalConverted, currentCurrency);
 }
 
-// ---- Modo edición ----
 function setEditMode(enabled) {
   isEditMode = enabled;
   toggleModeBtn.textContent = isEditMode ? 'Cotizar' : 'Editar';
@@ -193,7 +245,9 @@ function setEditMode(enabled) {
 
 function onToggleMode() { setEditMode(!isEditMode); }
 
-// ---- Sortable (Drag & Drop) ----
+// ============================================================
+//  SORTABLE (DRAG & DROP)
+// ============================================================
 function initSortable() {
   destroySortable();
   const lists = document.querySelectorAll('.module-list');
@@ -233,7 +287,9 @@ function destroySortable() {
   sortableInstances = [];
 }
 
-// ---- Módulos: CRUD ----
+// ============================================================
+//  CRUD: MÓDULOS
+// ============================================================
 async function onAddModule(e) {
   e.preventDefault();
   const desc = moduleDescInput.value.trim();
@@ -292,7 +348,9 @@ async function handleEditModule(id) {
   }
 }
 
-// ---- Categorías: CRUD ----
+// ============================================================
+//  CRUD: CATEGORÍAS
+// ============================================================
 async function onAddCategory() {
   const input = document.getElementById('new-category-input');
   const name = input.value.trim();
@@ -340,7 +398,9 @@ async function handleDeleteCategory(id) {
   }
 }
 
-// ---- Portafolios: Modal con acordeón horizontal ----
+// ============================================================
+//  PORTAFOLIOS: MODAL + ACRORDEÓN
+// ============================================================
 function openPortfoliosDialog() {
   renderPortfoliosModal();
   portfoliosDialog.showModal();
@@ -367,7 +427,6 @@ function renderPortfoliosModal() {
     item.className = 'portfolio-item-modal';
     item.dataset.id = pf.id;
 
-    // Botón principal (nombre del portafolio)
     const nameBtn = document.createElement('button');
     nameBtn.className = 'pf-name-btn';
     nameBtn.textContent = pf.name;
@@ -377,11 +436,9 @@ function renderPortfoliosModal() {
       togglePortfolioActions(pf.id);
     });
 
-    // Contenedor de acciones (horizontal)
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'pf-actions-container';
     actionsContainer.dataset.id = pf.id;
-    // Oculto por defecto
     actionsContainer.style.maxHeight = '0';
     actionsContainer.style.opacity = '0';
     actionsContainer.style.overflow = 'hidden';
@@ -391,7 +448,6 @@ function renderPortfoliosModal() {
     const actionsWrapper = document.createElement('div');
     actionsWrapper.className = 'pf-actions-wrapper';
 
-    // Botones de acción
     const actions = [
       { label: 'Abrir', action: 'open', icon: '🔗' },
       { label: 'Copiar', action: 'copy', icon: '📋' },
@@ -407,7 +463,6 @@ function renderPortfoliosModal() {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         handlePortfolioAction(a.action, pf.id);
-        // Si la acción no es 'editar', cerramos el panel
         if (a.action !== 'edit') {
           closePortfolioActions();
         }
@@ -419,7 +474,6 @@ function renderPortfoliosModal() {
     item.appendChild(nameBtn);
     item.appendChild(actionsContainer);
 
-    // Formulario de edición (inline)
     const editForm = document.createElement('div');
     editForm.className = 'pf-edit-form';
     editForm.dataset.id = pf.id;
@@ -453,7 +507,6 @@ function renderPortfoliosModal() {
     cancelEditBtn.textContent = 'Cancelar';
     cancelEditBtn.addEventListener('click', () => {
       editForm.style.display = 'none';
-      // Volver a mostrar las acciones
       actionsContainer.style.maxHeight = actionsContainer.scrollHeight + 'px';
       actionsContainer.style.opacity = '1';
       actionsContainer.style.marginTop = 'var(--space-sm)';
@@ -525,26 +578,28 @@ function appendAddPortfolioButton() {
   portfoliosListModal.appendChild(addContainer);
 }
 
-// --- Funciones de acordeón ---
 function togglePortfolioActions(id) {
   const item = document.querySelector(`.portfolio-item-modal[data-id="${id}"]`);
   if (!item) return;
   const actionsContainer = item.querySelector('.pf-actions-container');
   if (!actionsContainer) return;
 
-  // Si este portafolio ya está abierto, lo cerramos
   if (openPortfolioId === id && actionsContainer.style.maxHeight !== '0px') {
     closePortfolioActions();
     return;
   }
 
-  // Cerrar cualquier otro abierto
   closePortfolioActions();
 
-  // Abrir el nuevo
-  actionsContainer.style.maxHeight = actionsContainer.scrollHeight + 'px';
-  actionsContainer.style.opacity = '1';
-  actionsContainer.style.marginTop = 'var(--space-sm)';
+  // Forzar reflow para que la transición funcione
+  actionsContainer.style.maxHeight = '0';
+  actionsContainer.style.opacity = '0';
+  actionsContainer.style.marginTop = '0';
+  requestAnimationFrame(() => {
+    actionsContainer.style.maxHeight = actionsContainer.scrollHeight + 'px';
+    actionsContainer.style.opacity = '1';
+    actionsContainer.style.marginTop = 'var(--space-sm)';
+  });
   openPortfolioId = id;
 }
 
@@ -558,7 +613,6 @@ function closePortfolioActions() {
         actionsContainer.style.opacity = '0';
         actionsContainer.style.marginTop = '0';
       }
-      // Ocultar formulario de edición si está visible
       const editForm = item.querySelector('.pf-edit-form');
       if (editForm) editForm.style.display = 'none';
     }
@@ -587,7 +641,6 @@ function handlePortfolioAction(action, id) {
       });
     }
   } else if (action === 'edit') {
-    // Mostrar formulario de edición y ocultar acciones
     const item = document.querySelector(`.portfolio-item-modal[data-id="${id}"]`);
     if (item) {
       const actionsContainer = item.querySelector('.pf-actions-container');
@@ -597,7 +650,6 @@ function handlePortfolioAction(action, id) {
         actionsContainer.style.opacity = '0';
         actionsContainer.style.marginTop = '0';
         editForm.style.display = 'flex';
-        // Rellenar datos
         const inputs = editForm.querySelectorAll('input');
         if (inputs.length >= 2) {
           inputs[0].value = pf.name;
@@ -605,7 +657,7 @@ function handlePortfolioAction(action, id) {
         }
       }
     }
-    closePortfolioActions(); // Cerrar menú de acciones (ya que estamos en edición)
+    closePortfolioActions();
   } else if (action === 'delete') {
     if (confirm('¿Eliminar este portafolio?')) {
       onDeletePortfolio(id);
@@ -646,7 +698,9 @@ async function onDeletePortfolio(id) {
   }
 }
 
-// ---- Tasas de cambio ----
+// ============================================================
+//  TASAS DE CAMBIO
+// ============================================================
 function openRatesDialog() {
   const rates = getCurrentRates();
   if (rates) {
@@ -687,7 +741,9 @@ function onResetRates() {
   }
 }
 
-// ---- Cotización ----
+// ============================================================
+//  COTIZACIÓN
+// ============================================================
 function onQuoteAction() {
   if (currentCheckedIds.size === 0) {
     alert('Seleccione al menos un módulo.');
@@ -717,7 +773,9 @@ async function onDialogConfirm(e) {
   }
 }
 
-// ---- Event handlers varios ----
+// ============================================================
+//  EVENTOS VARIOS
+// ============================================================
 function onModuleCheckChange() {
   if (!isEditMode) updateTotal();
 }
@@ -728,5 +786,9 @@ async function onCurrencyChange(e) {
   renderAll();
 }
 
-// ---- Inicio ----
-init();
+// ============================================================
+//  INICIO (condicional según autenticación)
+// ============================================================
+if (localStorage.getItem('auth') === 'true') {
+  initApp();
+}
