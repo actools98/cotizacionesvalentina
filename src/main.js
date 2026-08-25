@@ -1,7 +1,6 @@
 // ============================================================
 //  main.js - Con autenticación por contraseña (1998)
 //  y persistencia de datos en Coolify (SQLite + volumen)
-//  + subida de imágenes y PDFs en portafolios
 // ============================================================
 
 // ---- Imports ----
@@ -400,7 +399,7 @@ async function handleDeleteCategory(id) {
 }
 
 // ============================================================
-//  PORTAFOLIOS: MODAL + ACRORDEÓN (CON SUBIDA DE ARCHIVOS)
+//  PORTAFOLIOS: MODAL + ACRORDEÓN (ORIGINAL - SIN ARCHIVOS)
 // ============================================================
 function openPortfoliosDialog() {
   renderPortfoliosModal();
@@ -437,10 +436,8 @@ function renderPortfoliosModal() {
       e.stopPropagation();
       if (pf.link) {
         window.open(pf.link, '_blank');
-      } else if (pf.file_name) {
-        window.open(`/uploads/portfolios/${pf.file_name}`, '_blank');
       } else {
-        alert('Este portafolio no tiene enlace ni archivo.');
+        alert('Este portafolio no tiene enlace.');
       }
     });
 
@@ -487,7 +484,7 @@ function renderPortfoliosModal() {
     item.appendChild(nameBtn);
     item.appendChild(actionsContainer);
 
-    // Formulario de edición (con input file)
+    // Formulario de edición (original - sin input file)
     const editForm = document.createElement('div');
     editForm.className = 'pf-edit-form';
     editForm.dataset.id = pf.id;
@@ -500,27 +497,20 @@ function renderPortfoliosModal() {
 
     const editLinkInput = document.createElement('input');
     editLinkInput.type = 'url';
-    editLinkInput.placeholder = 'Enlace (opcional)';
-    editLinkInput.value = pf.link || '';
-
-    const editFileInput = document.createElement('input');
-    editFileInput.type = 'file';
-    editFileInput.accept = 'image/*,application/pdf';
-    const fileLabel = document.createElement('span');
-    fileLabel.textContent = pf.file_name ? `Archivo actual: ${pf.file_name}` : 'No hay archivo';
+    editLinkInput.placeholder = 'Enlace';
+    editLinkInput.value = pf.link;
 
     const saveEditBtn = document.createElement('button');
     saveEditBtn.className = 'btn btn-success';
     saveEditBtn.textContent = 'Guardar';
     saveEditBtn.addEventListener('click', () => {
       const newName = editNameInput.value.trim();
-      const newLink = editLinkInput.value.trim() || null;
-      const file = editFileInput.files[0];
-      if (!newName) {
-        alert('El nombre es obligatorio.');
+      const newLink = editLinkInput.value.trim();
+      if (!newName || !newLink) {
+        alert('Complete ambos campos.');
         return;
       }
-      onEditPortfolio(pf.id, newName, newLink, file);
+      onEditPortfolio(pf.id, newName, newLink);
     });
 
     const cancelEditBtn = document.createElement('button');
@@ -535,8 +525,6 @@ function renderPortfoliosModal() {
 
     editForm.appendChild(editNameInput);
     editForm.appendChild(editLinkInput);
-    editForm.appendChild(editFileInput);
-    editForm.appendChild(fileLabel);
     editForm.appendChild(saveEditBtn);
     editForm.appendChild(cancelEditBtn);
 
@@ -567,28 +555,19 @@ function appendAddPortfolioButton() {
       inputName.id = 'new-pf-name';
       const inputLink = document.createElement('input');
       inputLink.type = 'url';
-      inputLink.placeholder = 'Enlace (opcional)';
+      inputLink.placeholder = 'Enlace';
       inputLink.id = 'new-pf-link';
-      const inputFile = document.createElement('input');
-      inputFile.type = 'file';
-      inputFile.accept = 'image/*,application/pdf';
-      inputFile.id = 'new-pf-file';
       const saveBtn = document.createElement('button');
       saveBtn.className = 'btn btn-success';
       saveBtn.textContent = 'Guardar';
       saveBtn.addEventListener('click', () => {
         const name = inputName.value.trim();
-        const link = inputLink.value.trim() || null;
-        const file = inputFile.files[0];
-        if (!name) {
-          alert('Nombre es obligatorio.');
+        const link = inputLink.value.trim();
+        if (!name || !link) {
+          alert('Complete ambos campos.');
           return;
         }
-        if (!link && !file) {
-          alert('Debe proporcionar un enlace o un archivo.');
-          return;
-        }
-        onAddPortfolio(name, link, file);
+        onAddPortfolio(name, link);
       });
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'btn btn-secondary';
@@ -599,7 +578,6 @@ function appendAddPortfolioButton() {
       });
       form.appendChild(inputName);
       form.appendChild(inputLink);
-      form.appendChild(inputFile);
       form.appendChild(saveBtn);
       form.appendChild(cancelBtn);
       container.appendChild(form);
@@ -660,10 +638,8 @@ function handlePortfolioAction(action, id) {
   if (action === 'open') {
     if (pf.link) {
       window.open(pf.link, '_blank');
-    } else if (pf.file_name) {
-      window.open(`/uploads/portfolios/${pf.file_name}`, '_blank');
     } else {
-      alert('Este portafolio no tiene enlace ni archivo.');
+      alert('Este portafolio no tiene enlace.');
     }
   } else if (action === 'copy') {
     if (pf.link) {
@@ -694,8 +670,7 @@ function handlePortfolioAction(action, id) {
         const inputs = editForm.querySelectorAll('input');
         if (inputs.length >= 2) {
           inputs[0].value = pf.name;
-          inputs[1].value = pf.link || '';
-          // El tercer input es el file, no se puede prellenar
+          inputs[1].value = pf.link;
         }
       }
     }
@@ -707,25 +682,25 @@ function handlePortfolioAction(action, id) {
   }
 }
 
-async function onAddPortfolio(name, link, file) {
+async function onAddPortfolio(name, link) {
   try {
-    await addPortfolio(name, link, file);
+    await addPortfolio(name, link);
     currentPortfolios = await getPortfolios();
     renderPortfoliosModal();
   } catch (error) {
     console.error('Error al agregar portafolio:', error);
-    alert('Error al agregar portafolio: ' + error.message);
+    alert('Error al agregar portafolio.');
   }
 }
 
-async function onEditPortfolio(id, name, link, file) {
+async function onEditPortfolio(id, name, link) {
   try {
-    await editPortfolio(id, name, link, file);
+    await editPortfolio(id, name, link);
     currentPortfolios = await getPortfolios();
     renderPortfoliosModal();
   } catch (error) {
     console.error('Error al editar portafolio:', error);
-    alert('Error al editar portafolio: ' + error.message);
+    alert('Error al editar portafolio.');
   }
 }
 
