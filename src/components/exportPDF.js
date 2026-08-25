@@ -4,7 +4,7 @@ import { getSelectedModules } from './quoteCalculator.js';
 import { convertCurrency } from './currencyConverter.js';
 import { formatCurrency } from '../utils/formatters.js';
 
-export async function generateQuotePDF(clientName, productName, checkedIds, currency, totalCOP, modules) {
+export async function generateQuotePDF(clientName, productName, productDesc, checkedIds, currency, totalCOP, modules) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -18,6 +18,8 @@ export async function generateQuotePDF(clientName, productName, checkedIds, curr
   doc.text(`Producto o servicio: ${productName}`, 14, 42);
   const today = new Date().toLocaleDateString('es-CO');
   doc.text(`Fecha: ${today}`, 14, 49);
+  // Campo Detalle
+  doc.text(`Detalle: ${productDesc || 'Sin detalle'}`, 14, 56);
 
   const selected = getSelectedModules(checkedIds, modules);
   const tableRows = selected.map(mod => {
@@ -30,7 +32,7 @@ export async function generateQuotePDF(clientName, productName, checkedIds, curr
   const totalFormatted = formatCurrency(totalConverted, currency);
 
   doc.autoTable({
-    startY: 56,
+    startY: 63, // Ajuste por la línea de Detalle
     head: [['Descripción', 'Precio']],
     body: tableRows,
     foot: [['Total', totalFormatted]],
