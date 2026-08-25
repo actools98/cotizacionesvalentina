@@ -5,8 +5,6 @@ import { open } from 'sqlite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import multer from 'multer';
-import { v4 as uuidv4 } from 'uuid';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,37 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-// Servir archivos estáticos desde la carpeta uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ---- Configuración de multer ----
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads', 'portfolios');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const basename = uuidv4();
-    cb(null, `${basename}${ext}`);
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Tipo de archivo no permitido. Solo imágenes y PDF.'));
-    }
-  }
-});
+app.use(express.static(path.join(__dirname, 'dist')));
 
 let db;
 
@@ -60,6 +28,7 @@ async function initDb() {
     driver: sqlite3.Database
   });
 
+  // Tabla categorías
   await db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
@@ -68,6 +37,7 @@ async function initDb() {
     )
   `);
 
+  // Tabla módulos
   await db.exec(`
     CREATE TABLE IF NOT EXISTS modules (
       id TEXT PRIMARY KEY,
@@ -78,18 +48,17 @@ async function initDb() {
     )
   `);
 
-  // Tabla portafolios con link y file_name
+  // Tabla portafolios (original - sin file_name)
   await db.exec(`
     CREATE TABLE IF NOT EXISTS portfolios (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      link TEXT,
-      file_name TEXT,
+      link TEXT NOT NULL,
       sort_order INTEGER DEFAULT 0
     )
   `);
 
-  // Cargar datos por defecto si no existen (categorías y módulos)
+  // Cargar categorías por defecto
   const catCount = await db.get('SELECT COUNT(*) as count FROM categories');
   if (catCount.count === 0) {
     const defaultCats = [
@@ -105,6 +74,7 @@ async function initDb() {
     console.log('📂 Categorías por defecto creadas');
   }
 
+  // Cargar módulos por defecto
   const modCount = await db.get('SELECT COUNT(*) as count FROM modules');
   if (modCount.count === 0) {
     const defaultPath = path.join(__dirname, 'public', 'data', 'default-modules.json');
@@ -136,11 +106,7 @@ async function initDb() {
   console.log('✅ Base de datos lista');
 }
 
-// ============================================================
-// RUTAS API
-// ============================================================
-
-// ---- Categorías (igual que antes) ----
+// ---- Rutas para categorías ----
 app.get('/api/categories', async (req, res) => {
   try {
     const categories = await db.all('SELECT * FROM categories ORDER BY sort_order');
@@ -182,6 +148,7 @@ app.put('/api/categories/:id', async (req, res) => {
 app.delete('/api/categories/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    // Mover módulos a la primera categoría
     const defaultCat = await db.get('SELECT id FROM categories ORDER BY sort_order LIMIT 1');
     if (defaultCat) {
       await db.run('UPDATE modules SET category_id = ? WHERE category_id = ?', [defaultCat.id, id]);
@@ -208,7 +175,7 @@ app.patch('/api/categories/reorder', async (req, res) => {
   }
 });
 
-// ---- Módulos (igual que antes) ----
+// ---- Rutas para módulos ----
 app.get('/api/modules', async (req, res) => {
   try {
     const modules = await db.all(`
@@ -289,7 +256,7 @@ app.patch('/api/modules/reorder', async (req, res) => {
   }
 });
 
-// ---- Portafolios (con subida de archivos) ----
+// ---- Rutas para portafolios (original - sin archivos) ----
 app.get('/api/portfolios', async (req, res) => {
   try {
     const portfolios = await db.all('SELECT * FROM portfolios ORDER BY sort_order');
@@ -299,61 +266,30 @@ app.get('/api/portfolios', async (req, res) => {
   }
 });
 
-app.post('/api/portfolios', upload.single('file'), async (req, res) => {
+app.post('/api/portfolios', async (req, res) => {
   const { name, link } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nombre es requerido' });
-  if (!link && !req.file) {
-    return res.status(400).json({ error: 'Debe proporcionar un enlace o un archivo.' });
-  }
-
+  if (!name || !link) return res.status(400).json({ error: 'Nombre y enlace requeridos' });
   try {
     const id = `pf-${Date.now()}`;
     const maxOrder = await db.get('SELECT MAX(sort_order) as max FROM portfolios');
     const order = (maxOrder?.max ?? -1) + 1;
-
-    const file_name = req.file ? req.file.filename : null;
-
-    await db.run(
-      'INSERT INTO portfolios (id, name, link, file_name, sort_order) VALUES (?, ?, ?, ?, ?)',
-      [id, name, link || null, file_name, order]
-    );
+    await db.run('INSERT INTO portfolios (id, name, link, sort_order) VALUES (?, ?, ?, ?)', [id, name, link, order]);
     const newPf = await db.get('SELECT * FROM portfolios WHERE id = ?', [id]);
     res.status(201).json(newPf);
   } catch (e) {
-    console.error(e);
     res.status(500).json({ error: 'Error al crear portafolio' });
   }
 });
 
-app.put('/api/portfolios/:id', upload.single('file'), async (req, res) => {
+app.put('/api/portfolios/:id', async (req, res) => {
   const { id } = req.params;
   const { name, link } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nombre es requerido' });
-
+  if (!name || !link) return res.status(400).json({ error: 'Nombre y enlace requeridos' });
   try {
-    const current = await db.get('SELECT file_name FROM portfolios WHERE id = ?', [id]);
-    if (!current) return res.status(404).json({ error: 'Portafolio no encontrado' });
-
-    let file_name = current.file_name;
-    if (req.file) {
-      // Borrar archivo anterior si existe
-      if (file_name) {
-        const oldPath = path.join(__dirname, 'uploads', 'portfolios', file_name);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-      file_name = req.file.filename;
-    }
-
-    await db.run(
-      'UPDATE portfolios SET name = ?, link = ?, file_name = ? WHERE id = ?',
-      [name, link || null, file_name, id]
-    );
+    await db.run('UPDATE portfolios SET name = ?, link = ? WHERE id = ?', [name, link, id]);
     const updated = await db.get('SELECT * FROM portfolios WHERE id = ?', [id]);
     res.json(updated);
   } catch (e) {
-    console.error(e);
     res.status(500).json({ error: 'Error al actualizar portafolio' });
   }
 });
@@ -361,13 +297,6 @@ app.put('/api/portfolios/:id', upload.single('file'), async (req, res) => {
 app.delete('/api/portfolios/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const current = await db.get('SELECT file_name FROM portfolios WHERE id = ?', [id]);
-    if (current && current.file_name) {
-      const filePath = path.join(__dirname, 'uploads', 'portfolios', current.file_name);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    }
     await db.run('DELETE FROM portfolios WHERE id = ?', [id]);
     res.status(204).end();
   } catch (e) {
@@ -375,7 +304,7 @@ app.delete('/api/portfolios/:id', async (req, res) => {
   }
 });
 
-// Servir el frontend (para cualquier otra ruta)
+// Para cualquier otra ruta, enviar index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
@@ -385,6 +314,3 @@ await initDb();
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
