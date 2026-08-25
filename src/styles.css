@@ -1,23 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400..900;1,400..900&family=Jost:wght@400;500;600&display=swap');
+
 /* ============================================================
    Design Tokens — Tema "Lienxo" (editorial claro)
    Inspirado en el portafolio: fondo crema, líneas finas,
    tipografía serif elegante + sans-serif con tracking amplio.
    ============================================================ */
 :root {
-  --color-bg-main: #F4F1EC;         /* crema con textura */
+  --color-bg-main: #FBFAF8;         /* blanco cálido, casi blanco */
   --color-bg-surface: #FFFFFF;      /* superficies (cards, sidebar) */
   --color-text-primary: #2B2A28;    /* casi negro cálido */
   --color-text-secondary: #7A756C;  /* gris cálido */
-  --color-border: #D8D2C6;          /* línea fina crema-gris */
+  --color-border: #E1DDD3;          /* línea fina crema-gris */
 
   --color-primary: #2B2A28;         /* negro cálido, actúa como acento */
   --color-primary-hover: #4A4640;
-  --color-primary-muted: #EDE8DE;   /* fondo suave para selección */
+  --color-primary-muted: #F1EEE6;   /* fondo suave para selección */
   --color-success: #6B8F71;         /* verde apagado */
   --color-danger: #B5675A;          /* terracota apagado */
 
   --font-sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
-  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-serif: 'Bodoni Moda', 'Didot', 'Playfair Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --text-h1: 2.4rem;
@@ -50,9 +52,9 @@
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg-main);
-  background-image:
-    radial-gradient(rgba(120, 110, 90, 0.05) 1px, transparent 1px);
-  background-size: 3px 3px;
+  /* grano de papel orgánico (ruido feTurbulence), no una grilla repetitiva */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.16  0 0 0 0 0.15  0 0 0 0 0.13  0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
   color: var(--color-text-primary);
   line-height: 1.6;
   padding: var(--space-lg);
