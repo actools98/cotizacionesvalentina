@@ -88,7 +88,7 @@ export async function reorderCategories(items) {
   return res.json();
 }
 
-// ---- Portafolios (con FormData) ----
+// ---- Portafolios (con soporte para archivos) ----
 export async function getPortfolios() {
   const res = await fetch(`${API_URL}/portfolios`);
   if (!res.ok) throw new Error('Error al obtener portafolios');
@@ -107,7 +107,7 @@ export async function addPortfolio(name, link, file) {
   });
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(errorText || 'Error al agregar portafolio');
+    throw new Error(`Error al agregar portafolio: ${res.status} ${errorText}`);
   }
   return res.json();
 }
@@ -124,7 +124,7 @@ export async function editPortfolio(id, name, link, file) {
   });
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(errorText || 'Error al editar portafolio');
+    throw new Error(`Error al editar portafolio: ${res.status} ${errorText}`);
   }
   return res.json();
 }
