@@ -88,30 +88,44 @@ export async function reorderCategories(items) {
   return res.json();
 }
 
-// ---- Portafolios ----
+// ---- Portafolios (con FormData) ----
 export async function getPortfolios() {
   const res = await fetch(`${API_URL}/portfolios`);
   if (!res.ok) throw new Error('Error al obtener portafolios');
   return res.json();
 }
 
-export async function addPortfolio(name, link) {
+export async function addPortfolio(name, link, file) {
+  const formData = new FormData();
+  formData.append('name', name);
+  if (link) formData.append('link', link);
+  if (file) formData.append('file', file);
+
   const res = await fetch(`${API_URL}/portfolios`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, link })
+    body: formData,
   });
-  if (!res.ok) throw new Error('Error al agregar portafolio');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Error al agregar portafolio');
+  }
   return res.json();
 }
 
-export async function editPortfolio(id, name, link) {
+export async function editPortfolio(id, name, link, file) {
+  const formData = new FormData();
+  formData.append('name', name);
+  if (link) formData.append('link', link);
+  if (file) formData.append('file', file);
+
   const res = await fetch(`${API_URL}/portfolios/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, link })
+    body: formData,
   });
-  if (!res.ok) throw new Error('Error al editar portafolio');
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Error al editar portafolio');
+  }
   return res.json();
 }
 
