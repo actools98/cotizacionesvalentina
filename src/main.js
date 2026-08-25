@@ -1,6 +1,7 @@
 // ============================================================
 //  main.js - Con autenticación por contraseña (1998)
 //  y persistencia de datos en Coolify (SQLite + volumen)
+//  + Campo "Detalle" en cotización
 // ============================================================
 
 // ---- Imports ----
@@ -75,6 +76,7 @@ const quoteActionBtn = document.getElementById('quote-action-btn');
 const clientDialog = document.getElementById('client-dialog');
 const clientNameInput = document.getElementById('client-name-input');
 const productNameInput = document.getElementById('product-name-input');
+const productDescInput = document.getElementById('product-desc-input'); // <-- NUEVO
 const dialogConfirm = document.getElementById('dialog-confirm');
 const dialogCancel = document.getElementById('dialog-cancel');
 const portfoliosCard = document.getElementById('portfolios-card');
@@ -399,7 +401,7 @@ async function handleDeleteCategory(id) {
 }
 
 // ============================================================
-//  PORTAFOLIOS: MODAL + ACRORDEÓN
+//  PORTAFOLIOS: MODAL + ACRORDEÓN (ORIGINAL)
 // ============================================================
 function openPortfoliosDialog() {
   renderPortfoliosModal();
@@ -427,15 +429,21 @@ function renderPortfoliosModal() {
     item.className = 'portfolio-item-modal';
     item.dataset.id = pf.id;
 
+    // Botón principal (nombre)
     const nameBtn = document.createElement('button');
     nameBtn.className = 'pf-name-btn';
     nameBtn.textContent = pf.name;
     nameBtn.dataset.id = pf.id;
     nameBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      togglePortfolioActions(pf.id);
+      if (pf.link) {
+        window.open(pf.link, '_blank');
+      } else {
+        alert('Este portafolio no tiene enlace.');
+      }
     });
 
+    // Contenedor de acciones (desplegable)
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'pf-actions-container';
     actionsContainer.dataset.id = pf.id;
@@ -450,7 +458,7 @@ function renderPortfoliosModal() {
 
     const actions = [
       { label: 'Abrir', action: 'open', icon: '🔗' },
-      { label: 'Copiar', action: 'copy', icon: '📋' },
+      { label: 'Copiar enlace', action: 'copy', icon: '📋' },
       { label: 'Editar', action: 'edit', icon: '✏️' },
       { label: 'Borrar', action: 'delete', icon: '🗑️', danger: true }
     ];
@@ -467,6 +475,10 @@ function renderPortfoliosModal() {
           closePortfolioActions();
         }
       });
+      if (a.action === 'copy' && !pf.link) {
+        btn.disabled = true;
+        btn.title = 'No hay enlace para copiar';
+      }
       actionsWrapper.appendChild(btn);
     });
 
@@ -474,6 +486,7 @@ function renderPortfoliosModal() {
     item.appendChild(nameBtn);
     item.appendChild(actionsContainer);
 
+    // Formulario de edición (original - sin input file)
     const editForm = document.createElement('div');
     editForm.className = 'pf-edit-form';
     editForm.dataset.id = pf.id;
@@ -591,7 +604,6 @@ function togglePortfolioActions(id) {
 
   closePortfolioActions();
 
-  // Forzar reflow para que la transición funcione
   actionsContainer.style.maxHeight = '0';
   actionsContainer.style.opacity = '0';
   actionsContainer.style.marginTop = '0';
@@ -625,7 +637,11 @@ function handlePortfolioAction(action, id) {
   if (!pf) return;
 
   if (action === 'open') {
-    if (pf.link) window.open(pf.link, '_blank');
+    if (pf.link) {
+      window.open(pf.link, '_blank');
+    } else {
+      alert('Este portafolio no tiene enlace.');
+    }
   } else if (action === 'copy') {
     if (pf.link) {
       navigator.clipboard.writeText(pf.link).then(() => {
@@ -639,6 +655,8 @@ function handlePortfolioAction(action, id) {
         document.body.removeChild(textArea);
         alert('Enlace copiado al portapapeles.');
       });
+    } else {
+      alert('No hay enlace para copiar.');
     }
   } else if (action === 'edit') {
     const item = document.querySelector(`.portfolio-item-modal[data-id="${id}"]`);
@@ -751,6 +769,7 @@ function onQuoteAction() {
   }
   clientNameInput.value = '';
   productNameInput.value = '';
+  productDescInput.value = ''; // <-- NUEVO: limpiar detalle
   clientDialog.showModal();
   clientNameInput.focus();
 }
@@ -759,13 +778,14 @@ async function onDialogConfirm(e) {
   e.preventDefault();
   const clientName = clientNameInput.value.trim();
   const productName = productNameInput.value.trim();
+  const productDesc = productDescInput.value.trim(); // <-- NUEVO: obtener detalle
   if (!clientName || !productName) {
     alert('Complete todos los campos.');
     return;
   }
   const totalCOP = calculateTotal(Array.from(currentCheckedIds), currentModules);
   try {
-    await generateQuotePDF(clientName, productName, Array.from(currentCheckedIds), currentCurrency, totalCOP, currentModules);
+    await generateQuotePDF(clientName, productName, productDesc, Array.from(currentCheckedIds), currentCurrency, totalCOP, currentModules);
     clientDialog.close();
   } catch (error) {
     console.error('Error al generar PDF:', error);
