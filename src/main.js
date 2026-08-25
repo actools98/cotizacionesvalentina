@@ -1,6 +1,7 @@
 // ============================================================
 //  main.js - Con autenticación por contraseña (1998)
 //  y persistencia de datos en Coolify (SQLite + volumen)
+//  + subida de imágenes y PDFs en portafolios
 // ============================================================
 
 // ---- Imports ----
@@ -399,7 +400,7 @@ async function handleDeleteCategory(id) {
 }
 
 // ============================================================
-//  PORTAFOLIOS: MODAL + ACRORDEÓN
+//  PORTAFOLIOS: MODAL + ACRORDEÓN (CON SUBIDA DE ARCHIVOS)
 // ============================================================
 function openPortfoliosDialog() {
   renderPortfoliosModal();
@@ -427,15 +428,23 @@ function renderPortfoliosModal() {
     item.className = 'portfolio-item-modal';
     item.dataset.id = pf.id;
 
+    // Botón principal (nombre)
     const nameBtn = document.createElement('button');
     nameBtn.className = 'pf-name-btn';
     nameBtn.textContent = pf.name;
     nameBtn.dataset.id = pf.id;
     nameBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      togglePortfolioActions(pf.id);
+      if (pf.link) {
+        window.open(pf.link, '_blank');
+      } else if (pf.file_name) {
+        window.open(`/uploads/portfolios/${pf.file_name}`, '_blank');
+      } else {
+        alert('Este portafolio no tiene enlace ni archivo.');
+      }
     });
 
+    // Contenedor de acciones (desplegable)
     const actionsContainer = document.createElement('div');
     actionsContainer.className = 'pf-actions-container';
     actionsContainer.dataset.id = pf.id;
@@ -450,7 +459,7 @@ function renderPortfoliosModal() {
 
     const actions = [
       { label: 'Abrir', action: 'open', icon: '🔗' },
-      { label: 'Copiar', action: 'copy', icon: '📋' },
+      { label: 'Copiar enlace', action: 'copy', icon: '📋' },
       { label: 'Editar', action: 'edit', icon: '✏️' },
       { label: 'Borrar', action: 'delete', icon: '🗑️', danger: true }
     ];
@@ -467,6 +476,10 @@ function renderPortfoliosModal() {
           closePortfolioActions();
         }
       });
+      if (a.action === 'copy' && !pf.link) {
+        btn.disabled = true;
+        btn.title = 'No hay enlace para copiar';
+      }
       actionsWrapper.appendChild(btn);
     });
 
@@ -474,6 +487,7 @@ function renderPortfoliosModal() {
     item.appendChild(nameBtn);
     item.appendChild(actionsContainer);
 
+    // Formulario de edición (con input file)
     const editForm = document.createElement('div');
     editForm.className = 'pf-edit-form';
     editForm.dataset.id = pf.id;
@@ -486,20 +500,27 @@ function renderPortfoliosModal() {
 
     const editLinkInput = document.createElement('input');
     editLinkInput.type = 'url';
-    editLinkInput.placeholder = 'Enlace';
-    editLinkInput.value = pf.link;
+    editLinkInput.placeholder = 'Enlace (opcional)';
+    editLinkInput.value = pf.link || '';
+
+    const editFileInput = document.createElement('input');
+    editFileInput.type = 'file';
+    editFileInput.accept = 'image/*,application/pdf';
+    const fileLabel = document.createElement('span');
+    fileLabel.textContent = pf.file_name ? `Archivo actual: ${pf.file_name}` : 'No hay archivo';
 
     const saveEditBtn = document.createElement('button');
     saveEditBtn.className = 'btn btn-success';
     saveEditBtn.textContent = 'Guardar';
     saveEditBtn.addEventListener('click', () => {
       const newName = editNameInput.value.trim();
-      const newLink = editLinkInput.value.trim();
-      if (!newName || !newLink) {
-        alert('Complete ambos campos.');
+      const newLink = editLinkInput.value.trim() || null;
+      const file = editFileInput.files[0];
+      if (!newName) {
+        alert('El nombre es obligatorio.');
         return;
       }
-      onEditPortfolio(pf.id, newName, newLink);
+      onEditPortfolio(pf.id, newName, newLink, file);
     });
 
     const cancelEditBtn = document.createElement('button');
@@ -514,6 +535,8 @@ function renderPortfoliosModal() {
 
     editForm.appendChild(editNameInput);
     editForm.appendChild(editLinkInput);
+    editForm.appendChild(editFileInput);
+    editForm.appendChild(fileLabel);
     editForm.appendChild(saveEditBtn);
     editForm.appendChild(cancelEditBtn);
 
@@ -544,19 +567,28 @@ function appendAddPortfolioButton() {
       inputName.id = 'new-pf-name';
       const inputLink = document.createElement('input');
       inputLink.type = 'url';
-      inputLink.placeholder = 'Enlace';
+      inputLink.placeholder = 'Enlace (opcional)';
       inputLink.id = 'new-pf-link';
+      const inputFile = document.createElement('input');
+      inputFile.type = 'file';
+      inputFile.accept = 'image/*,application/pdf';
+      inputFile.id = 'new-pf-file';
       const saveBtn = document.createElement('button');
       saveBtn.className = 'btn btn-success';
       saveBtn.textContent = 'Guardar';
       saveBtn.addEventListener('click', () => {
         const name = inputName.value.trim();
-        const link = inputLink.value.trim();
-        if (!name || !link) {
-          alert('Complete ambos campos.');
+        const link = inputLink.value.trim() || null;
+        const file = inputFile.files[0];
+        if (!name) {
+          alert('Nombre es obligatorio.');
           return;
         }
-        onAddPortfolio(name, link);
+        if (!link && !file) {
+          alert('Debe proporcionar un enlace o un archivo.');
+          return;
+        }
+        onAddPortfolio(name, link, file);
       });
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'btn btn-secondary';
@@ -567,6 +599,7 @@ function appendAddPortfolioButton() {
       });
       form.appendChild(inputName);
       form.appendChild(inputLink);
+      form.appendChild(inputFile);
       form.appendChild(saveBtn);
       form.appendChild(cancelBtn);
       container.appendChild(form);
@@ -625,7 +658,13 @@ function handlePortfolioAction(action, id) {
   if (!pf) return;
 
   if (action === 'open') {
-    if (pf.link) window.open(pf.link, '_blank');
+    if (pf.link) {
+      window.open(pf.link, '_blank');
+    } else if (pf.file_name) {
+      window.open(`/uploads/portfolios/${pf.file_name}`, '_blank');
+    } else {
+      alert('Este portafolio no tiene enlace ni archivo.');
+    }
   } else if (action === 'copy') {
     if (pf.link) {
       navigator.clipboard.writeText(pf.link).then(() => {
@@ -639,6 +678,8 @@ function handlePortfolioAction(action, id) {
         document.body.removeChild(textArea);
         alert('Enlace copiado al portapapeles.');
       });
+    } else {
+      alert('No hay enlace para copiar.');
     }
   } else if (action === 'edit') {
     const item = document.querySelector(`.portfolio-item-modal[data-id="${id}"]`);
@@ -653,7 +694,8 @@ function handlePortfolioAction(action, id) {
         const inputs = editForm.querySelectorAll('input');
         if (inputs.length >= 2) {
           inputs[0].value = pf.name;
-          inputs[1].value = pf.link;
+          inputs[1].value = pf.link || '';
+          // El tercer input es el file, no se puede prellenar
         }
       }
     }
@@ -665,25 +707,25 @@ function handlePortfolioAction(action, id) {
   }
 }
 
-async function onAddPortfolio(name, link) {
+async function onAddPortfolio(name, link, file) {
   try {
-    await addPortfolio(name, link);
+    await addPortfolio(name, link, file);
     currentPortfolios = await getPortfolios();
     renderPortfoliosModal();
   } catch (error) {
     console.error('Error al agregar portafolio:', error);
-    alert('Error al agregar portafolio.');
+    alert('Error al agregar portafolio: ' + error.message);
   }
 }
 
-async function onEditPortfolio(id, name, link) {
+async function onEditPortfolio(id, name, link, file) {
   try {
-    await editPortfolio(id, name, link);
+    await editPortfolio(id, name, link, file);
     currentPortfolios = await getPortfolios();
     renderPortfoliosModal();
   } catch (error) {
     console.error('Error al editar portafolio:', error);
-    alert('Error al editar portafolio.');
+    alert('Error al editar portafolio: ' + error.message);
   }
 }
 
