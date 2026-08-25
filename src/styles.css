@@ -1285,3 +1285,19 @@ dialog::backdrop {
     justify-content: center;
   }
 }
+/* Estilos para inputs file en portafolios */
+.pf-edit-form input[type="file"] {
+  width: 100%;
+  padding: var(--space-xs) 0;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-main);
+  cursor: pointer;
+}
+
+.pf-edit-form span {
+  display: block;
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
