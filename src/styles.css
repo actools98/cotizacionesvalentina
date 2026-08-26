@@ -1297,3 +1297,250 @@ dialog::backdrop {
   border-color: var(--color-primary);
   outline: none;
 }
+/* ============================================================
+   MEJORAS RESPONSIVE PARA MÓVIL
+   ============================================================ */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 1023px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+  .sidebar {
+    position: static;
+    margin-top: var(--space-md);
+  }
+}
+
+/* Móviles grandes (hasta 768px) */
+@media (max-width: 767px) {
+  .content-grid {
+    gap: var(--space-md);
+    margin-bottom: 0;
+  }
+  .sidebar {
+    margin-top: var(--space-md);
+  }
+  .summary-card,
+  .portfolios-card {
+    padding: var(--space-sm);
+  }
+  .total-amount {
+    font-size: 2rem;
+  }
+  .module-card {
+    padding: var(--space-sm);
+    font-size: var(--text-small);
+  }
+  .module-card .admin-actions .btn {
+    font-size: 0.7rem;
+    padding: 0 var(--space-xs);
+    min-height: 28px;
+  }
+  #add-module-form {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  #add-module-form input,
+  #add-module-form select,
+  #add-module-form .btn {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+  #category-controls {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  #category-controls input,
+  #category-controls .btn {
+    width: 100%;
+  }
+  .category-header {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .category-header .category-actions {
+    display: flex;
+    gap: var(--space-xs);
+    margin-left: auto;
+  }
+  .app-footer {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-sm);
+  }
+  .add-portfolio-form {
+    flex-direction: column;
+  }
+  .add-portfolio-form input,
+  .add-portfolio-form .btn {
+    width: 100%;
+  }
+  .portfolio-item {
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .portfolio-item .pf-actions {
+    margin-left: auto;
+  }
+  #portfolios-dialog {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* Móviles pequeños (hasta 640px) */
+@media (max-width: 640px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+  }
+  .header-left {
+    justify-content: space-between;
+  }
+  .header-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-xs);
+  }
+  .header-right .btn,
+  .header-right .btn-rates,
+  .header-right #currency-select {
+    font-size: 0.7rem;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 36px;
+  }
+  .logo .logo-img {
+    height: 30px;
+  }
+  .btn-toggle {
+    font-size: 0.7rem;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 36px;
+  }
+  #currency-select {
+    font-size: 0.7rem;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 36px;
+  }
+}
+
+/* Móviles muy pequeños (hasta 480px) */
+@media (max-width: 480px) {
+  body {
+    padding: var(--space-sm);
+  }
+  .app-container {
+    padding: var(--space-xs);
+  }
+  .summary-card,
+  .portfolios-card {
+    padding: var(--space-sm);
+  }
+  .total-amount {
+    font-size: 1.8rem;
+  }
+  #client-dialog {
+    padding: var(--space-md);
+    width: 95%;
+    top: 10%;
+    transform: translateX(-50%);
+  }
+  dialog {
+    padding: var(--space-md);
+    max-width: 95%;
+    margin: 0 auto;
+    top: 10%;
+    transform: translateX(-50%);
+  }
+  .dialog-actions .btn {
+    min-width: 80px;
+    font-size: 0.8rem;
+  }
+  /* Tarjetas de módulo en móvil */
+  .module-card {
+    padding: var(--space-xs) var(--space-sm);
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+  .module-card .module-label {
+    font-size: 0.9rem;
+    margin-left: var(--space-xs);
+    flex: 1 1 60%;
+  }
+  .module-card .module-price {
+    font-size: 0.9rem;
+    white-space: normal;
+    text-align: right;
+  }
+  .module-card input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  /* Formulario agregar módulo */
+  #add-module-form input,
+  #add-module-form select,
+  #add-module-form textarea {
+    width: 100%;
+    flex: 1 1 auto;
+    font-size: 0.9rem;
+  }
+  #add-module-form .btn {
+    width: 100%;
+  }
+  /* Menú contextual de portafolios en móvil (overlay centrado) */
+  .pf-context-menu {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 90%;
+    max-width: 300px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) 0;
+  }
+  .pf-context-menu .pf-menu-item {
+    padding: 12px 16px;
+    font-size: 1rem;
+    text-align: center;
+  }
+  .pf-button {
+    font-size: 1rem;
+    padding: 12px;
+  }
+  .pf-actions-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pf-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Móviles extra pequeños (hasta 400px) */
+@media (max-width: 400px) {
+  body {
+    padding: var(--space-xs);
+  }
+  .app-container {
+    padding: var(--space-xs);
+  }
+  .total-amount {
+    font-size: 1.5rem;
+  }
+  .btn {
+    font-size: 0.7rem;
+    padding: var(--space-xs) var(--space-sm);
+    min-height: 36px;
+  }
+  #client-dialog .form-group input,
+  #edit-module-dialog .form-group input,
+  #edit-module-dialog .form-group textarea {
+    font-size: 0.85rem;
+  }
+}
