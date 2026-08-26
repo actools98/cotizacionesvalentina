@@ -15,12 +15,18 @@
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
       background: #ffffff;
       color: #000000;
-      padding: 48px;
       line-height: 1.5;
+      /* El padding se eliminó de aquí */
     }
     .pdf-container {
-      max-width: 100%;
+      width: 794px;         /* Ancho fijo */
+      min-height: 1123px;   /* Altura mínima de A4 */
+      padding: 48px;        /* Padding trasladado al contenedor */
       background: #ffffff;
+      position: absolute;   /* Anclaje para evitar offsets */
+      top: 0;
+      left: 0;
+      margin: 0;
     }
 
     /* ==========================================================
@@ -171,7 +177,7 @@
        ========================================================== */
     @media print {
       body { padding: 0; }
-      .pdf-container { margin: 0; }
+      .pdf-container { margin: 0; position: static; min-height: auto; }
     }
   </style>
 </head>
