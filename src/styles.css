@@ -1331,12 +1331,12 @@ dialog::backdrop {
   }
   .module-card {
     padding: var(--space-sm);
-    font-size: var(--text-small);
+    font-size: var(--text-body);
   }
   .module-card .admin-actions .btn {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     padding: 0 var(--space-xs);
-    min-height: 28px;
+    min-height: 32px;
   }
   #add-module-form {
     flex-direction: column;
@@ -1407,22 +1407,22 @@ dialog::backdrop {
   .header-right .btn,
   .header-right .btn-rates,
   .header-right #currency-select {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: var(--space-xs) var(--space-sm);
-    min-height: 36px;
+    min-height: 38px;
   }
   .logo .logo-img {
-    height: 30px;
+    height: 36px;
   }
   .btn-toggle {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: var(--space-xs) var(--space-sm);
-    min-height: 36px;
+    min-height: 38px;
   }
   #currency-select {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: var(--space-xs) var(--space-sm);
-    min-height: 36px;
+    min-height: 38px;
   }
 }
 
@@ -1456,27 +1456,35 @@ dialog::backdrop {
   }
   .dialog-actions .btn {
     min-width: 80px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
-  /* Tarjetas de módulo en móvil */
+  /* Tarjetas de módulo en móvil - más espacio y textos legibles */
   .module-card {
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-xs);
   }
   .module-card .module-label {
-    font-size: 0.9rem;
-    margin-left: var(--space-xs);
+    font-size: 1rem;
     flex: 1 1 60%;
+    min-width: 0;
+    margin-left: var(--space-xs);
+    /* Permitimos que el texto ocupe varias líneas si es necesario */
+    white-space: normal;
+    word-break: break-word;
   }
   .module-card .module-price {
-    font-size: 0.9rem;
-    white-space: normal;
+    font-size: 1rem;
+    white-space: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
     text-align: right;
   }
   .module-card input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
   }
   /* Formulario agregar módulo */
   #add-module-form input,
@@ -1484,10 +1492,11 @@ dialog::backdrop {
   #add-module-form textarea {
     width: 100%;
     flex: 1 1 auto;
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
   #add-module-form .btn {
     width: 100%;
+    font-size: 1rem;
   }
   /* Menú contextual de portafolios en móvil (overlay centrado) */
   .pf-context-menu {
@@ -1496,7 +1505,7 @@ dialog::backdrop {
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     width: 90%;
-    max-width: 300px;
+    max-width: 320px;
     max-height: 80vh;
     overflow-y: auto;
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
@@ -1504,13 +1513,13 @@ dialog::backdrop {
     padding: var(--space-sm) 0;
   }
   .pf-context-menu .pf-menu-item {
-    padding: 12px 16px;
+    padding: 14px 18px;
     font-size: 1rem;
     text-align: center;
   }
   .pf-button {
     font-size: 1rem;
-    padding: 12px;
+    padding: 14px;
   }
   .pf-actions-wrapper {
     flex-direction: column;
@@ -1519,6 +1528,7 @@ dialog::backdrop {
   .pf-action-btn {
     width: 100%;
     justify-content: center;
+    font-size: 0.9rem;
   }
 }
 
@@ -1534,54 +1544,24 @@ dialog::backdrop {
     font-size: 1.5rem;
   }
   .btn {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: var(--space-xs) var(--space-sm);
-    min-height: 36px;
+    min-height: 38px;
   }
   #client-dialog .form-group input,
   #edit-module-dialog .form-group input,
   #edit-module-dialog .form-group textarea {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 }
+
 /* ============================================================
    ARREGLO PARA PRECIOS EN MÓVIL - PONERLOS A LA DERECHA
    ============================================================ */
 
 /* Esto aplica en todos los tamaños de pantalla: el precio siempre a la derecha */
 .module-card:not(.admin-mode) .module-price {
-  margin-left: auto;      /* Empuja el precio hacia la derecha */
-  flex-shrink: 0;         /* Evita que el precio se encoja */
-  text-align: right;      /* El número queda alineado a la derecha */
-}
-
-/* Esto solo aplica en teléfonos (pantallas de 480px o menos) */
-@media (max-width: 480px) {
-  .module-card {
-    padding: var(--space-xs) var(--space-sm);
-    flex-wrap: nowrap;        /* Evita que el precio se vaya abajo */
-    align-items: center;
-    gap: var(--space-xs);
-  }
-  .module-card .module-label {
-    font-size: 0.9rem;
-    flex: 1 1 auto;
-    min-width: 0;
-    white-space: nowrap;      /* El nombre queda en una sola línea */
-    overflow: hidden;         /* Si es muy largo, se corta */
-    text-overflow: ellipsis;  /* Y se ven unos puntitos "..." */
-    margin-left: var(--space-xs);
-  }
-  .module-card .module-price {
-    font-size: 0.9rem;
-    white-space: nowrap;      /* El precio no se parte en varias líneas */
-    margin-left: auto;        /* Esto lo empuja a la derecha */
-    flex-shrink: 0;
-    text-align: right;
-  }
-  .module-card input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
+  margin-left: auto;
+  flex-shrink: 0;
+  text-align: right;
 }
