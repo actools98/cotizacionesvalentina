@@ -1,6 +1,6 @@
 // ============================================================
 //  main.js - Con autenticación por contraseña (1998)
-//  + Detalle en módulos y edición con diálogo
+//  + Portafolios con menú contextual
 // ============================================================
 
 import { getModules, addModule, deleteModule, editModule, reorderModules, getCategories, addCategory, editCategory, deleteCategory, reorderCategories, getPortfolios, addPortfolio, editPortfolio, deletePortfolio } from './state.js';
@@ -92,7 +92,6 @@ const ratesDialogCancel = document.getElementById('rates-dialog-cancel');
 const ratesDialogReset = document.getElementById('rates-dialog-reset');
 const ratesDialogClose = document.getElementById('rates-dialog-close');
 
-// Nuevos elementos para edición de módulo
 const editModuleDialog = document.getElementById('edit-module-dialog');
 const editModuleName = document.getElementById('edit-module-name');
 const editModulePrice = document.getElementById('edit-module-price');
@@ -113,7 +112,7 @@ let currentCurrency = 'COP';
 let currentCheckedIds = new Set();
 let isEditMode = false;
 let sortableInstances = [];
-let openPortfolioId = null;
+let openContextMenuId = null; // ID del portafolio cuyo menú está abierto
 
 // ============================================================
 //  INICIALIZACIÓN
@@ -185,16 +184,16 @@ function bindEvents() {
   ratesDialogSave.addEventListener('click', onSaveRates);
   ratesDialogReset.addEventListener('click', onResetRates);
 
-  // Edición de módulo
   editModuleSave.addEventListener('click', saveEditModule);
   editModuleCancel.addEventListener('click', () => editModuleDialog.close());
 
-  // Cerrar panel de portafolios al hacer clic fuera
+  // Cerrar menú contextual al hacer clic fuera
   document.addEventListener('click', (e) => {
-    if (openPortfolioId) {
-      const item = document.querySelector(`.portfolio-item-modal[data-id="${openPortfolioId}"]`);
-      if (item && !item.contains(e.target)) {
-        closePortfolioActions();
+    if (openContextMenuId) {
+      const menu = document.querySelector(`.pf-context-menu[data-id="${openContextMenuId}"]`);
+      const button = document.querySelector(`.pf-button[data-id="${openContextMenuId}"]`);
+      if (menu && !menu.contains(e.target) && button && !button.contains(e.target)) {
+        closeContextMenu();
       }
     }
   });
@@ -359,7 +358,6 @@ function handleEditModule(id) {
   editModuleName.value = module.description;
   editModulePrice.value = module.price;
   editModuleDetail.value = module.detail || '';
-  // Seleccionar categoría
   const catSelect = editModuleCategory;
   for (let opt of catSelect.options) {
     if (opt.value === module.category_id) {
@@ -442,26 +440,312 @@ async function handleDeleteCategory(id) {
 }
 
 // ============================================================
-//  PORTAFOLIOS (sin cambios, igual que antes)
+//  PORTAFOLIOS - CON MENÚ CONTEXTUAL Y FORMULARIO
 // ============================================================
-function openPortfoliosDialog() { /* ... */ }
-function closePortfoliosDialog() { /* ... */ }
-function renderPortfoliosModal() { /* ... */ }
-function appendAddPortfolioButton() { /* ... */ }
-function togglePortfolioActions(id) { /* ... */ }
-function closePortfolioActions() { /* ... */ }
-function handlePortfolioAction(action, id) { /* ... */ }
-async function onAddPortfolio(name, link) { /* ... */ }
-async function onEditPortfolio(id, name, link) { /* ... */ }
-async function onDeletePortfolio(id) { /* ... */ }
+
+function openPortfoliosDialog() {
+  renderPortfoliosModal();
+  portfoliosDialog.showModal();
+}
+
+function closePortfoliosDialog() {
+  closeContextMenu(); // cerrar menú si estaba abierto
+  portfoliosDialog.close();
+}
+
+function renderPortfoliosModal() {
+  if (!portfoliosListModal) return;
+  portfoliosListModal.innerHTML = '';
+
+  // --- Lista de portafolios como botones ---
+  if (!currentPortfolios || currentPortfolios.length === 0) {
+    const emptyMsg = document.createElement('p');
+    emptyMsg.textContent = 'No hay portafolios. Agrega uno.';
+    emptyMsg.style.color = 'var(--color-text-secondary)';
+    emptyMsg.style.textAlign = 'center';
+    portfoliosListModal.appendChild(emptyMsg);
+  } else {
+    currentPortfolios.forEach(pf => {
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'relative';
+      wrapper.style.marginBottom = '8px';
+
+      // Botón principal
+      const btn = document.createElement('button');
+      btn.className = 'pf-button';
+      btn.dataset.id = pf.id;
+      btn.textContent = pf.name;
+      btn.style.width = '100%';
+      btn.style.padding = '10px 12px';
+      btn.style.background = 'var(--color-bg-surface)';
+      btn.style.border = '1px solid var(--color-border)';
+      btn.style.borderRadius = 'var(--radius-sm)';
+      btn.style.color = 'var(--color-text-primary)';
+      btn.style.fontSize = 'var(--text-body)';
+      btn.style.fontWeight = '500';
+      btn.style.cursor = 'pointer';
+      btn.style.transition = 'all 0.2s ease';
+      btn.style.textAlign = 'left';
+
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'var(--color-primary-muted)';
+        btn.style.borderColor = 'var(--color-primary)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'var(--color-bg-surface)';
+        btn.style.borderColor = 'var(--color-border)';
+      });
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleContextMenu(pf.id);
+      });
+
+      // Menú contextual
+      const menu = document.createElement('div');
+      menu.className = 'pf-context-menu';
+      menu.dataset.id = pf.id;
+      menu.style.display = 'none';
+      menu.style.position = 'absolute';
+      menu.style.top = 'calc(100% + 4px)';
+      menu.style.left = '0';
+      menu.style.right = '0';
+      menu.style.background = 'var(--color-bg-surface)';
+      menu.style.border = '1px solid var(--color-border)';
+      menu.style.borderRadius = 'var(--radius-sm)';
+      menu.style.boxShadow = 'var(--shadow-floating)';
+      menu.style.zIndex = '1000';
+      menu.style.padding = '4px 0';
+      menu.style.minWidth = '180px';
+
+      const options = [
+        { label: '📋 Copiar enlace', action: () => copyLink(pf.link) },
+        { label: '🔗 Abrir enlace', action: () => openLink(pf.link) },
+        { label: '✏️ Editar', action: () => startEditPortfolio(pf.id) },
+        { label: '🗑️ Borrar', action: () => onDeletePortfolio(pf.id), danger: true }
+      ];
+
+      options.forEach(opt => {
+        const item = document.createElement('button');
+        item.textContent = opt.label;
+        item.style.display = 'block';
+        item.style.width = '100%';
+        item.style.padding = '8px 12px';
+        item.style.background = 'transparent';
+        item.style.border = 'none';
+        item.style.textAlign = 'left';
+        item.style.fontSize = 'var(--text-small)';
+        item.style.color = opt.danger ? 'var(--color-danger)' : 'var(--color-text-primary)';
+        item.style.cursor = 'pointer';
+        item.style.transition = 'background 0.15s ease';
+        item.addEventListener('mouseenter', () => {
+          item.style.background = 'var(--color-primary-muted)';
+        });
+        item.addEventListener('mouseleave', () => {
+          item.style.background = 'transparent';
+        });
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          opt.action();
+          closeContextMenu();
+        });
+        menu.appendChild(item);
+      });
+
+      wrapper.appendChild(btn);
+      wrapper.appendChild(menu);
+      portfoliosListModal.appendChild(wrapper);
+    });
+  }
+
+  // --- Formulario para agregar ---
+  const addForm = document.createElement('div');
+  addForm.style.marginTop = '16px';
+  addForm.style.paddingTop = '16px';
+  addForm.style.borderTop = '1px solid var(--color-border)';
+
+  const form = document.createElement('form');
+  form.id = 'add-portfolio-form';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = 'Nombre del portafolio';
+  nameInput.required = true;
+  nameInput.style.width = '100%';
+  nameInput.style.padding = '8px 12px';
+  nameInput.style.marginBottom = '8px';
+  nameInput.style.border = '1px solid var(--color-border)';
+  nameInput.style.borderRadius = 'var(--radius-sm)';
+  nameInput.style.background = 'var(--color-bg-main)';
+  nameInput.style.color = 'var(--color-text-primary)';
+  nameInput.style.fontSize = 'var(--text-body)';
+
+  const linkInput = document.createElement('input');
+  linkInput.type = 'url';
+  linkInput.placeholder = 'Enlace (URL)';
+  linkInput.required = true;
+  linkInput.style.width = '100%';
+  linkInput.style.padding = '8px 12px';
+  linkInput.style.marginBottom = '8px';
+  linkInput.style.border = '1px solid var(--color-border)';
+  linkInput.style.borderRadius = 'var(--radius-sm)';
+  linkInput.style.background = 'var(--color-bg-main)';
+  linkInput.style.color = 'var(--color-text-primary)';
+  linkInput.style.fontSize = 'var(--text-body)';
+
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'submit';
+  submitBtn.className = 'btn btn-primary';
+  submitBtn.textContent = 'Agregar portafolio';
+  submitBtn.style.width = '100%';
+
+  form.appendChild(nameInput);
+  form.appendChild(linkInput);
+  form.appendChild(submitBtn);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    const link = linkInput.value.trim();
+    if (!name || !link) {
+      alert('Nombre y enlace son obligatorios.');
+      return;
+    }
+    await onAddPortfolio(name, link);
+    nameInput.value = '';
+    linkInput.value = '';
+    // Re-renderizar
+    renderPortfoliosModal();
+  });
+
+  addForm.appendChild(form);
+  portfoliosListModal.appendChild(addForm);
+}
+
+// Funciones auxiliares del menú contextual
+function toggleContextMenu(id) {
+  if (openContextMenuId === id) {
+    closeContextMenu();
+    return;
+  }
+  closeContextMenu(); // cerrar cualquier otro abierto
+  const menu = document.querySelector(`.pf-context-menu[data-id="${id}"]`);
+  if (menu) {
+    menu.style.display = 'block';
+    openContextMenuId = id;
+  }
+}
+
+function closeContextMenu() {
+  if (openContextMenuId) {
+    const menu = document.querySelector(`.pf-context-menu[data-id="${openContextMenuId}"]`);
+    if (menu) menu.style.display = 'none';
+    openContextMenuId = null;
+  }
+}
+
+function copyLink(link) {
+  navigator.clipboard.writeText(link).then(() => {
+    alert('Enlace copiado al portapapeles');
+  }).catch(() => {
+    // Fallback
+    const textarea = document.createElement('textarea');
+    textarea.value = link;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    alert('Enlace copiado al portapapeles');
+  });
+}
+
+function openLink(link) {
+  window.open(link, '_blank');
+}
+
+function startEditPortfolio(id) {
+  const portfolio = currentPortfolios.find(p => p.id === id);
+  if (!portfolio) return;
+  const newName = prompt('Nuevo nombre:', portfolio.name);
+  if (newName === null || newName.trim() === '') return;
+  const newLink = prompt('Nuevo enlace:', portfolio.link);
+  if (newLink === null || newLink.trim() === '') return;
+  onEditPortfolio(id, newName.trim(), newLink.trim());
+}
+
+async function onAddPortfolio(name, link) {
+  try {
+    await addPortfolio(name, link);
+    currentPortfolios = await getPortfolios();
+    renderPortfoliosModal();
+  } catch (error) {
+    console.error('Error al agregar portafolio:', error);
+    alert('Error al agregar portafolio.');
+  }
+}
+
+async function onEditPortfolio(id, name, link) {
+  try {
+    await editPortfolio(id, name, link);
+    currentPortfolios = await getPortfolios();
+    renderPortfoliosModal();
+  } catch (error) {
+    console.error('Error al editar portafolio:', error);
+    alert('Error al editar portafolio.');
+  }
+}
+
+async function onDeletePortfolio(id) {
+  if (!confirm('¿Eliminar este portafolio?')) return;
+  try {
+    await deletePortfolio(id);
+    currentPortfolios = await getPortfolios();
+    renderPortfoliosModal();
+  } catch (error) {
+    console.error('Error al eliminar portafolio:', error);
+    alert('Error al eliminar portafolio.');
+  }
+}
 
 // ============================================================
 //  TASAS
 // ============================================================
-function openRatesDialog() { /* ... */ }
-function closeRatesDialog() { /* ... */ }
-function onSaveRates() { /* ... */ }
-function onResetRates() { /* ... */ }
+function openRatesDialog() {
+  const rates = getCurrentRates();
+  if (rates) {
+    rateUsdInput.value = rates.USD * 1000;
+    rateEurInput.value = rates.EUR * 1000;
+  } else {
+    rateUsdInput.value = '';
+    rateEurInput.value = '';
+  }
+  ratesDialog.showModal();
+}
+
+function closeRatesDialog() {
+  ratesDialog.close();
+}
+
+function onSaveRates() {
+  const usd = parseFloat(rateUsdInput.value);
+  const eur = parseFloat(rateEurInput.value);
+  if (isNaN(usd) || isNaN(eur) || usd <= 0 || eur <= 0) {
+    alert('Ingrese valores numéricos positivos.');
+    return;
+  }
+  saveManualRates(usd / 1000, eur / 1000);
+  closeRatesDialog();
+  alert('Tasas guardadas correctamente.');
+}
+
+function onResetRates() {
+  if (confirm('¿Restablecer tasas a la API?')) {
+    localStorage.removeItem('actols_manual_rates');
+    fetchExchangeRates(true);
+    closeRatesDialog();
+    alert('Tasas restablecidas.');
+  }
+}
 
 // ============================================================
 //  COTIZACIÓN
@@ -487,7 +771,6 @@ async function onDialogConfirm(e) {
   }
   const totalCOP = calculateTotal(Array.from(currentCheckedIds), currentModules);
   try {
-    // Pasamos los módulos completos para que el PDF pueda acceder a detail
     const selectedModules = getSelectedModules(Array.from(currentCheckedIds), currentModules);
     await generateQuotePDF(clientName, productName, selectedModules, currentCurrency, totalCOP);
     clientDialog.close();
