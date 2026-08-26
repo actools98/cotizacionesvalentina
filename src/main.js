@@ -1,6 +1,7 @@
 // ============================================================
 //  main.js - Con autenticación por contraseña (1998)
 //  + Portafolios con menú contextual
+//  + Contador de días de demo (27/08/2026 – 11/09/2026)
 // ============================================================
 
 import { getModules, addModule, deleteModule, editModule, reorderModules, getCategories, addCategory, editCategory, deleteCategory, reorderCategories, getPortfolios, addPortfolio, editPortfolio, deletePortfolio } from './state.js';
@@ -126,10 +127,39 @@ async function initApp() {
     bindEvents();
     renderPortfoliosModal();
     updatePortfoliosVisibility();
+    // Contador de días de demo
+    updateDemoCounter();
+    setInterval(updateDemoCounter, 60000);
   } catch (error) {
     console.error('Error en inicialización:', error);
     alert('No se pudo cargar la aplicación.');
   }
+}
+
+// ============================================================
+//  CONTADOR DE DÍAS DE DEMO (27/08/2026 – 11/09/2026)
+// ============================================================
+function updateDemoCounter() {
+  const el = document.getElementById('demo-counter');
+  if (!el) return;
+
+  const now = new Date();
+  const start = new Date(2026, 7, 27); // 27 de agosto
+  const end = new Date(2026, 8, 11);   // 11 de septiembre
+
+  let days = 0;
+  if (now < start) {
+    days = 15;
+  } else if (now >= end) {
+    days = 0;
+  } else {
+    const diff = end - now;
+    days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    if (days < 0) days = 0;
+    if (days > 15) days = 15;
+  }
+
+  el.textContent = `Te quedan ${days} días de Demo`;
 }
 
 async function loadData() {
