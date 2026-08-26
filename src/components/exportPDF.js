@@ -36,14 +36,19 @@ export async function generateQuotePDF(clientName, productName, selectedModules,
   const totalFormatted = formatCurrency(totalConverted, currency);
   html = html.replace('{{total}}', totalFormatted);
 
-  // 2. Crear iframe oculto
+  // 2. Crear iframe invisible pero ubicado en pantalla para evitar el recorte del navegador
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
-  iframe.style.top = '-9999px';
-  iframe.style.left = '-9999px';
-  iframe.style.width = '794px'; // 210mm a 96dpi
-  iframe.style.height = '1px';
+  iframe.style.top = '0px';       // Fija la posición visible
+  iframe.style.left = '0px';      // Fija la posición visible
+  iframe.style.width = '794px';   // 210mm a 96dpi
+  iframe.style.height = '1123px'; // Altura mínima obligatoria
   iframe.style.border = 'none';
+  iframe.style.background = '#ffffff';
+  iframe.style.opacity = '0';     // Lo vuelve invisible al ojo
+  iframe.style.zIndex = '-9999';
+  iframe.style.pointerEvents = 'none';
+  
   document.body.appendChild(iframe);
 
   const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -61,16 +66,24 @@ export async function generateQuotePDF(clientName, productName, selectedModules,
 
   try {
     const body = iframe.contentDocument.body;
+    const container = iframe.contentDocument.querySelector('.pdf-container');
+    
+    // Ajustar altura al contenido real
     iframe.style.height = body.scrollHeight + 'px';
 
-    const canvas = await html2canvas(body, {
+    const canvas = await html2canvas(container, {
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
       allowTaint: false,
-      width: body.scrollWidth,
-      height: body.scrollHeight,
+      // Forzar coordenadas
+      x: 0,
+      y: 0,
+      scrollX: 0,
+      scrollY: 0,
+      width: 794,
+      windowWidth: 794,
     });
 
     const imgWidth = canvas.width;
