@@ -13,6 +13,48 @@ import { formatCurrency } from './utils/formatters.js';
 import Sortable from 'sortablejs';
 
 // ============================================================
+//  CONTROL DE DEMO (expirada o no)
+// ============================================================
+const DEMO_END = new Date(2026, 8, 11); // 11 de septiembre de 2026
+const FORCE_EXPIRED_KEY = 'actols_force_expired';
+
+// Función que determina si la demo ha expirado
+function isDemoExpired() {
+  // 1. Si hay flag forzado en localStorage, lo respetamos
+  if (localStorage.getItem(FORCE_EXPIRED_KEY) === 'true') {
+    return true;
+  }
+
+  // 2. Si la URL tiene ?force_expired=true, forzamos y guardamos en localStorage para futuras recargas
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('force_expired') === 'true') {
+    localStorage.setItem(FORCE_EXPIRED_KEY, 'true');
+    return true;
+  }
+
+  // 3. Si la URL tiene ?force_expired=false, limpiamos el flag y recargamos sin parámetro
+  if (urlParams.get('force_expired') === 'false') {
+    localStorage.removeItem(FORCE_EXPIRED_KEY);
+    // Quitamos el parámetro de la URL para no tenerlo siempre
+    const newUrl = window.location.pathname + window.location.search.replace(/[?&]force_expired=false/, '').replace(/^&/, '?');
+    window.location.replace(newUrl);
+    return false;
+  }
+
+  // 4. Comparar fecha actual con la fecha de fin
+  const now = new Date();
+  return now >= DEMO_END;
+}
+
+// Si la demo ha expirado, redirigir a expired.html
+if (isDemoExpired()) {
+  // Si ya estamos en expired.html, no redirigir en bucle
+  if (!window.location.pathname.endsWith('expired.html')) {
+    window.location.replace('/expired.html');
+  }
+}
+
+// ============================================================
 //  AUTENTICACIÓN
 // ============================================================
 const PASSWORD = 'VL18';
