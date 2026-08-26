@@ -1544,3 +1544,44 @@ dialog::backdrop {
     font-size: 0.85rem;
   }
 }
+/* ============================================================
+   ARREGLO PARA PRECIOS EN MÓVIL - PONERLOS A LA DERECHA
+   ============================================================ */
+
+/* Esto aplica en todos los tamaños de pantalla: el precio siempre a la derecha */
+.module-card:not(.admin-mode) .module-price {
+  margin-left: auto;      /* Empuja el precio hacia la derecha */
+  flex-shrink: 0;         /* Evita que el precio se encoja */
+  text-align: right;      /* El número queda alineado a la derecha */
+}
+
+/* Esto solo aplica en teléfonos (pantallas de 480px o menos) */
+@media (max-width: 480px) {
+  .module-card {
+    padding: var(--space-xs) var(--space-sm);
+    flex-wrap: nowrap;        /* Evita que el precio se vaya abajo */
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .module-card .module-label {
+    font-size: 0.9rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;      /* El nombre queda en una sola línea */
+    overflow: hidden;         /* Si es muy largo, se corta */
+    text-overflow: ellipsis;  /* Y se ven unos puntitos "..." */
+    margin-left: var(--space-xs);
+  }
+  .module-card .module-price {
+    font-size: 0.9rem;
+    white-space: nowrap;      /* El precio no se parte en varias líneas */
+    margin-left: auto;        /* Esto lo empuja a la derecha */
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .module-card input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
