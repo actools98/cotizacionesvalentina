@@ -18,40 +18,37 @@ import Sortable from 'sortablejs';
 const DEMO_END = new Date(2026, 8, 11); // 11 de septiembre de 2026
 const FORCE_EXPIRED_KEY = 'actols_force_expired';
 
-// Función que determina si la demo ha expirado
 function isDemoExpired() {
-  // 1. Si hay flag forzado en localStorage, lo respetamos
-  if (localStorage.getItem(FORCE_EXPIRED_KEY) === 'true') {
-    return true;
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceParam = urlParams.get('force_expired');
+
+  // Caso 1: force_expired=false -> desactivar expiración forzada y recargar sin parámetros
+  if (forceParam === 'false') {
+    localStorage.removeItem(FORCE_EXPIRED_KEY);
+    // Si hay parámetros en la URL, los eliminamos todos para recargar limpio
+    if (window.location.search) {
+      const cleanUrl = window.location.pathname;
+      window.location.replace(cleanUrl);
+      return false; // no se ejecutará porque la página se recarga
+    }
+    // Si no había parámetros, simplemente devolvemos false (no expirado)
+    return false;
   }
 
-  // 2. Si la URL tiene ?force_expired=true, forzamos y guardamos en localStorage para futuras recargas
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('force_expired') === 'true') {
+  // Caso 2: force_expired=true -> forzar expiración y guardar en localStorage
+  if (forceParam === 'true') {
     localStorage.setItem(FORCE_EXPIRED_KEY, 'true');
     return true;
   }
 
-  // 3. Si la URL tiene ?force_expired=false, limpiamos el flag y recargamos sin parámetro
-  if (urlParams.get('force_expired') === 'false') {
-    localStorage.removeItem(FORCE_EXPIRED_KEY);
-    // Quitamos el parámetro de la URL para no tenerlo siempre
-    const newUrl = window.location.pathname + window.location.search.replace(/[?&]force_expired=false/, '').replace(/^&/, '?');
-    window.location.replace(newUrl);
-    return false;
+  // Caso 3: flag en localStorage (persistente)
+  if (localStorage.getItem(FORCE_EXPIRED_KEY) === 'true') {
+    return true;
   }
 
-  // 4. Comparar fecha actual con la fecha de fin
+  // Caso 4: fecha actual >= fecha de fin
   const now = new Date();
   return now >= DEMO_END;
-}
-
-// Si la demo ha expirado, redirigir a expired.html
-if (isDemoExpired()) {
-  // Si ya estamos en expired.html, no redirigir en bucle
-  if (!window.location.pathname.endsWith('expired.html')) {
-    window.location.replace('/expired.html');
-  }
 }
 
 // ============================================================
